@@ -179,12 +179,20 @@ function initSimulation() {
     lightBall.y = ARENA_SIZE * 0.65;
     lightBall.vx = -4.5;
     lightBall.vy = -3.2;
+
+    // ⚡️ Snabb "Pre-roll" i minnet (250 steg):
+    // Gör att frontlinjen genast blir levande, naggad och organisk istället för ett sterilt rakt streck!
+    for (let i = 0; i < 280; i++) {
+        stepPhysics(darkBall, 1.0);
+        stepPhysics(lightBall, 1.0);
+    }
 }
 
 // --- Fysik & Blockövertagande vid Kollision ---
-function stepPhysics(ball) {
-    ball.x += ball.vx * state.speedFactor;
-    ball.y += ball.vy * state.speedFactor;
+function stepPhysics(ball, speedOverride = null) {
+    const speed = speedOverride !== null ? speedOverride : state.speedFactor;
+    ball.x += ball.vx * speed;
+    ball.y += ball.vy * speed;
 
     // 1. Studsa mot ytterväggar i arenan (0 till ARENA_SIZE)
     if (ball.x - ball.radius < 0) {
