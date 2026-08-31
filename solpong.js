@@ -211,9 +211,35 @@ function stepPhysics(ball, speedOverride = null) {
         ball.vy = -Math.abs(ball.vy);
     }
 
-    // 2. Studsa mot och erövra motståndarblock
+    // 2. Studsa mot och erövra motståndarblock (med Astronomisk Soljämvikt ⚖️)
     const angles = [0, Math.PI / 4, Math.PI / 2, (3 * Math.PI) / 4, Math.PI, (5 * Math.PI) / 4, (3 * Math.PI) / 2, (7 * Math.PI) / 4];
     
+    // Räkna aktuell solbalans på brädet
+    let currentDayCount = 0;
+    for (let y = 0; y < GRID_SIZE; y++) {
+        for (let x = 0; x < GRID_SIZE; x++) {
+            if (grid[y][x] === 0) currentDayCount++;
+        }
+    }
+    const loc = LOCATIONS[state.location];
+    const solar = calculateSolarTimes(loc.lat, loc.lon, state.dayOfYear);
+    const targetDayCount = Math.round(GRID_SIZE * GRID_SIZE * solar.daylightRatio);
+    const diff = currentDayCount - targetDayCount; // >0: för mycket dag, <0: för mycket natt
+
+    // Dynamisk Jämviktskraft (håller frontlinjen bunden till solens faktiska timmar)
+    let flipChance = 1.0;
+    if (ball.flipTo === 0) {
+        // Dark ball vill göra fler dagrutor (0)
+        if (diff > 4) {
+            flipChance = Math.max(0.25, 1.0 - (diff - 4) * 0.15);
+        }
+    } else {
+        // Light ball vill göra fler nattrutor (1)
+        if (diff < -4) {
+            flipChance = Math.max(0.25, 1.0 - (-diff - 4) * 0.15);
+        }
+    }
+
     for (let angle of angles) {
         const checkX = ball.x + Math.cos(angle) * ball.radius;
         const checkY = ball.y + Math.sin(angle) * ball.radius;
@@ -223,8 +249,10 @@ function stepPhysics(ball, speedOverride = null) {
 
         if (gx >= 0 && gx < GRID_SIZE && gy >= 0 && gy < GRID_SIZE) {
             if (grid[gy][gx] === ball.enemyTile) {
-                // Erövra rutan!
-                grid[gy][gx] = ball.flipTo;
+                // Erövra rutan med jämviktssannolikhet (garanterar alltid minst 25% så den aldrig fastnar i fickor)
+                if (Math.random() <= flipChance) {
+                    grid[gy][gx] = ball.flipTo;
+                }
 
                 // Studsa!
                 if (Math.abs(Math.cos(angle)) > Math.abs(Math.sin(angle))) {
@@ -233,8 +261,8 @@ function stepPhysics(ball, speedOverride = null) {
                     ball.vy = -ball.vy;
                 }
 
-                // Liten vinkeljitter
-                const jitter = (Math.random() - 0.5) * 0.15;
+                // Liten vinkeljitter för naturlig studs
+                const jitter = (Math.random() - 0.5) * 0.20;
                 ball.vx += jitter;
                 ball.vy -= jitter;
 
