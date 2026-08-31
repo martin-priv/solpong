@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sol-Pong 🌅🌙 | Tavel-Klocka</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+        }
+
+        body {
+            background: linear-gradient(180deg, #2b383d 0%, #151e22 100%);
+            color: #c9d1d9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        /* Själva Tavel-ramen som hänger på väggen */
+        .art-frame {
+            position: relative;
+            background: #111a1d;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            image-rendering: pixelated;
+        }
+
+        /* Test- och inställningspanel för datorn (visas ej på tavlan) */
+        .dev-controls {
+            margin-top: 24px;
+            background: rgba(17, 26, 29, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px 20px;
+            width: 100%;
+            max-width: 492px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .dev-header {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #7b9299;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            flex: 1;
+        }
+
+        label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #8b9ea3;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        label span {
+            color: #e5ece9;
+            font-family: monospace;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: #e5ece9;
+            cursor: pointer;
+        }
+
+        select, button {
+            background: #1c272b;
+            color: #c9d1d9;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 7px 12px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            cursor: pointer;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        select:hover, button:hover {
+            background: #28373d;
+            border-color: #a0b2b8;
+        }
+
+        button.active {
+            background: #238636;
+            border-color: #2ea043;
+            color: #fff;
+        }
+
+        .speed-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+
+        .speed-buttons button {
+            padding: 6px 4px;
+            text-align: center;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 🖼️ TAVLAN SOM HÄNGER PÅ VÄGGEN (All info finns i själva tavlan!) -->
+    <div class="art-frame">
+        <canvas id="pongCanvas" width="460" height="492"></canvas>
+    </div>
+
+    <!-- 🛠️ UTVECKLAR- / TESTPANEL (Endast för att labba i webbläsaren) -->
+    <div class="dev-controls">
+        <div class="dev-header">
+            <span>⚙️ Inställningar (Datorvy)</span>
+            <button id="resetBtn" style="padding: 3px 8px; font-size: 0.72rem;">🔄 Nollställ</button>
+        </div>
+
+        <div class="control-row">
+            <div class="control-group">
+                <label>Plats i Sverige:</label>
+                <select id="locationSelect">
+                    <option value="stockholm">Stockholm (59.33° N)</option>
+                    <option value="goteborg">Göteborg (57.70° N)</option>
+                    <option value="malmo">Malmö (55.60° N)</option>
+                    <option value="kiruna">Kiruna (67.85° N)</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Färgtema:</label>
+                <select id="themeSelect">
+                    <option value="nordic">Nordic Slate (Gråblå & Gräddvit)</option>
+                    <option value="eink">E-Ink Minimal (Svart & Vit)</option>
+                    <option value="arcade">70s Arcade (Svart & Grön)</option>
+                    <option value="amber">Vintage Amber</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>Hastighet / Skärmläge:</label>
+            <div class="speed-buttons">
+                <button id="btnSlow" class="active">🔴 1x Dygnsrytm (24h)</button>
+                <button id="btnZen">🍃 E-Ink Zen (10s)</button>
+                <button id="btnEinkFast">⚡️ E-Ink Max (3 fps)</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>Årstid / Dag på året: <span id="dateDisplay">31 Augusti</span></label>
+            <input type="range" id="dayOfYearSlider" min="1" max="365" value="243">
+        </div>
+    </div>
+
+    <script src="solpong.js"></script>
+</body>
+</html>
