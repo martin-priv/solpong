@@ -329,16 +329,22 @@ function render() {
 
     const sunriseStr = solar.isMidnightSun ? "00:00" : (solar.isPolarNight ? "--:--" : secToHHMM(solar.sunriseSec));
     const sunsetStr = solar.isMidnightSun ? "24:00" : (solar.isPolarNight ? "--:--" : secToHHMM(solar.sunsetSec));
+    const dayPct = Math.round(solar.daylightRatio * 100);
+    const balanceStr = solar.isMidnightSun ? "100% dag" : (solar.isPolarNight ? "0% dag" : `${dayPct}% dag`);
 
-    ctx.font = "400 12px 'SF Mono', Monaco, 'Courier New', monospace";
+    ctx.font = "400 11px 'SF Mono', Monaco, 'Courier New', monospace";
     ctx.textBaseline = "middle";
     ctx.fillStyle = theme.textSecondary;
 
-    // Vänster: Endast klockslag för soluppgång
+    // Vänster: Klockslag för soluppgång
     ctx.textAlign = "left";
     ctx.fillText(sunriseStr, 14, barY + (BAR_HEIGHT / 2));
 
-    // Höger: Endast klockslag för solnedgång
+    // Mitten: Balansen mellan natt och dag (t.ex. 59% dag)
+    ctx.textAlign = "center";
+    ctx.fillText(balanceStr, ARENA_SIZE / 2, barY + (BAR_HEIGHT / 2));
+
+    // Höger: Klockslag för solnedgång
     ctx.textAlign = "right";
     ctx.fillText(sunsetStr, ARENA_SIZE - 14, barY + (BAR_HEIGHT / 2));
 }
@@ -402,6 +408,15 @@ if (themeSelect) {
 if (resetBtn) {
     resetBtn.addEventListener("click", () => {
         initSimulation();
+    });
+}
+
+const toggleSettingsBtn = document.getElementById("toggleSettingsBtn");
+const devControls = document.getElementById("devControls");
+
+if (toggleSettingsBtn && devControls) {
+    toggleSettingsBtn.addEventListener("click", () => {
+        devControls.classList.toggle("hidden");
     });
 }
 
