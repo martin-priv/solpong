@@ -3,7 +3,8 @@
 > **En 24-timmars Slow Art-tavelklocka för det svenska solljuset**  
 > Inspirerad av Koen van Gilsts *Pong War / Yin-Yang*.
 
-![Sol-Pong Nordic Slate](web/index.html)
+🌐 **Live Demo:** [martin-priv.github.io/solpong](https://martin-priv.github.io/solpong/)
+
 
 ---
 
