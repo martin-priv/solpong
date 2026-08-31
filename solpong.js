@@ -73,11 +73,19 @@ let lightBall = {
     flipTo: 1
 };
 
+function getTodayDayOfYear() {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 0);
+    const diff = (now - start) + ((start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000);
+    const oneDay = 1000 * 60 * 60 * 24;
+    return Math.floor(diff / oneDay);
+}
+
 let state = {
     location: "stockholm",
     theme: "nordic",
-    dayOfYear: 243, // 31 Augusti idag
-    speedFactor: 1.0
+    dayOfYear: getTodayDayOfYear(),
+    speedFactor: 0.001 // Default: 🔴 1x Dygnsrytm (24h Slow Art)
 };
 
 // --- Astronomiska Solberäkningar (NOAA Standard) ---
@@ -371,5 +379,6 @@ function loop() {
 
 // Starta
 initSimulation();
+if (daySlider) daySlider.value = state.dayOfYear;
 if (dateDisplay) dateDisplay.textContent = dayOfYearToDateStr(state.dayOfYear);
 loop();
