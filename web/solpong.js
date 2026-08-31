@@ -6,11 +6,17 @@ const LOCATIONS = {
     stockholm: { name: "Stockholm", lat: 59.3293, lon: 18.0686 },
     goteborg:  { name: "Göteborg",  lat: 57.7089, lon: 11.9746 },
     malmo:     { name: "Malmö",     lat: 55.6050, lon: 13.0038 },
-    kiruna:    { name: "Kiruna",    lat: 67.8558, lon: 20.2253 }
+    visby:     { name: "Visby",     lat: 57.6348, lon: 18.2948 },
+    karlstad:  { name: "Karlstad",  lat: 59.3793, lon: 13.5036 },
+    sundsvall: { name: "Sundsvall", lat: 62.3908, lon: 17.3069 },
+    umea:      { name: "Umeå",      lat: 63.8258, lon: 20.2630 },
+    kiruna:    { name: "Kiruna",    lat: 67.8558, lon: 20.2253 },
+    custom:    { name: "Egen plats", lat: 59.3293, lon: 18.0686 }
 };
 
 const THEMES = {
     nordic: {
+        name: "Nordic Slate",
         dayColor: "#e5ece9",       // Ljus gräddvit/isgrå
         nightColor: "#22424d",     // Djup nordisk skifferblå
         barBg: "#16282e",
@@ -19,6 +25,7 @@ const THEMES = {
         accent: "#f4a261"
     },
     eink: {
+        name: "E-Ink Minimal",
         dayColor: "#f7f7f5",
         nightColor: "#111111",
         barBg: "#000000",
@@ -26,7 +33,53 @@ const THEMES = {
         textSecondary: "#999999",
         accent: "#ffffff"
     },
+    paper_charcoal: {
+        name: "Wabi-Sabi",
+        dayColor: "#f2ede4",       // Varmt linne/råpapper
+        nightColor: "#252422",     // Japanskt kol
+        barBg: "#181716",
+        textPrimary: "#f2ede4",
+        textSecondary: "#8c877d",
+        accent: "#eb5e28"
+    },
+    aurora: {
+        name: "Aurora",
+        dayColor: "#4ef2bb",       // Neongrönt polarsken
+        nightColor: "#091424",     // Djup arktisk natt
+        barBg: "#050d17",
+        textPrimary: "#4ef2bb",
+        textSecondary: "#307a68",
+        accent: "#4ef2bb"
+    },
+    falu: {
+        name: "Falu Rödfärg",
+        dayColor: "#f4eee1",       // Linoljevit
+        nightColor: "#6b201c",     // Genuin Falu slamfärg
+        barBg: "#3d110f",
+        textPrimary: "#f4eee1",
+        textSecondary: "#a8716e",
+        accent: "#f4eee1"
+    },
+    terracotta: {
+        name: "Terracotta & Sand",
+        dayColor: "#ebe2d5",       // Ljus sandsten
+        nightColor: "#8c4632",     // Varm terracotta
+        barBg: "#4a241b",
+        textPrimary: "#ebe2d5",
+        textSecondary: "#b89084",
+        accent: "#ebe2d5"
+    },
+    amber: {
+        name: "Vintage Amber",
+        dayColor: "#ffc857",
+        nightColor: "#1e1e24",
+        barBg: "#111114",
+        textPrimary: "#ffc857",
+        textSecondary: "#8f7030",
+        accent: "#ffc857"
+    },
     arcade: {
+        name: "70s Arcade",
         dayColor: "#33ff33",
         nightColor: "#051605",
         barBg: "#020a02",
@@ -34,44 +87,18 @@ const THEMES = {
         textSecondary: "#146614",
         accent: "#33ff33"
     },
-    amber: {
-        dayColor: "#ffc857",
-        nightColor: "#1e1e24",
-        barBg: "#111114",
-        textPrimary: "#ffc857",
-        textSecondary: "#8f7030",
-        accent: "#ffc857"
+    cyberpunk: {
+        name: "Synthwave",
+        dayColor: "#00f0ff",       // Isblå neon
+        nightColor: "#220033",     // Djup nattlila
+        barBg: "#12001c",
+        textPrimary: "#00f0ff",
+        textSecondary: "#8f3099",
+        accent: "#ff007f"
     }
 };
 
-const GRID_SIZE = 20; // 20x20 = 400 block
-const ARENA_SIZE = 460;
-const TILE_SIZE = ARENA_SIZE / GRID_SIZE; // 23px per block
-const BAR_HEIGHT = 32; // Minimalistisk fot för klockslag
-
-let grid = []; // 0 = Ljus, 1 = Mörk
-
-// 1. MÖRKA BOLLEN (Kör i Ljus botten, studsar mot Mörka block och erövrar dem)
-let darkBall = {
-    x: 0,
-    y: 0,
-    vx: 5.0,
-    vy: 3.5,
-    radius: 9,
-    enemyTile: 1,
-    flipTo: 0
-};
-
-// 2. LJUSA BOLLEN (Kör i Mörk botten, studsar mot Ljusa block och erövrar dem)
-let lightBall = {
-    x: 0,
-    y: 0,
-    vx: -5.0,
-    vy: -3.5,
-    radius: 9,
-    enemyTile: 0,
-    flipTo: 1
-};
+const STORAGE_KEY = "solpong_preferences_v1";
 
 function getTodayDayOfYear() {
     const now = new Date();
@@ -83,10 +110,57 @@ function getTodayDayOfYear() {
 
 let state = {
     location: "stockholm",
+    customLat: 59.3293,
+    customLon: 18.0686,
+    customName: "Egen plats",
     theme: "nordic",
     dayOfYear: getTodayDayOfYear(),
-    speedFactor: 0.001 // Default: 🔴 1x Dygnsrytm (24h Slow Art)
+    speedFactor: 0.001, // Default: 🔴 1x Dygnsrytm (24h)
+    speedMode: "slow"
 };
+
+function saveSettings() {
+    try {
+        const payload = {
+            location: state.location,
+            customLat: state.customLat,
+            customLon: state.customLon,
+            customName: state.customName,
+            theme: state.theme,
+            speedFactor: state.speedFactor,
+            speedMode: state.speedMode
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch (e) {
+        console.warn("Could not save to localStorage", e);
+    }
+}
+
+function loadSettings() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (saved.theme && THEMES[saved.theme]) state.theme = saved.theme;
+        if (saved.location) state.location = saved.location;
+        if (saved.customLat) {
+            state.customLat = saved.customLat;
+            LOCATIONS.custom.lat = saved.customLat;
+        }
+        if (saved.customLon) {
+            state.customLon = saved.customLon;
+            LOCATIONS.custom.lon = saved.customLon;
+        }
+        if (saved.customName) {
+            state.customName = saved.customName;
+            LOCATIONS.custom.name = saved.customName;
+        }
+        if (typeof saved.speedFactor === "number") state.speedFactor = saved.speedFactor;
+        if (saved.speedMode) state.speedMode = saved.speedMode;
+    } catch (e) {
+        console.warn("Could not load from localStorage", e);
+    }
+}
 
 // --- Astronomiska Solberäkningar (NOAA Standard) ---
 function calculateSolarTimes(lat, lon, dayOfYear) {
@@ -154,7 +228,7 @@ function dayOfYearToDateStr(day) {
 
 // --- Starta om simuleringen ---
 function initSimulation() {
-    const loc = LOCATIONS[state.location];
+    const loc = LOCATIONS[state.location] || LOCATIONS.stockholm;
     const solar = calculateSolarTimes(loc.lat, loc.lon, state.dayOfYear);
     const dayCols = Math.round(GRID_SIZE * solar.daylightRatio);
 
@@ -280,8 +354,8 @@ function stepPhysics(ball, speedOverride = null) {
 
 // --- Rita Allt (Arenan + Integrerad Sol-Typografi i själva Tavlan!) ---
 function render() {
-    const theme = THEMES[state.theme];
-    const loc = LOCATIONS[state.location];
+    const theme = THEMES[state.theme] || THEMES.nordic;
+    const loc = LOCATIONS[state.location] || LOCATIONS.stockholm;
     const solar = calculateSolarTimes(loc.lat, loc.lon, state.dayOfYear);
 
     // 1. Rita Rutnätet och räkna block
@@ -355,32 +429,64 @@ const dateDisplay = document.getElementById("dateDisplay");
 const locationSelect = document.getElementById("locationSelect");
 const themeSelect = document.getElementById("themeSelect");
 const resetBtn = document.getElementById("resetBtn");
+const geoBtn = document.getElementById("geoBtn");
+const customCoordsRow = document.getElementById("customCoordsRow");
+const customLatInput = document.getElementById("customLatInput");
+const customLonInput = document.getElementById("customLonInput");
 
 const btnSlow = document.getElementById("btnSlow");
 const btnZen = document.getElementById("btnZen");
 const btnEinkFast = document.getElementById("btnEinkFast");
 
+function updateSpeedUI() {
+    [btnSlow, btnZen, btnEinkFast].forEach(b => b && b.classList.remove("active"));
+    if (state.speedMode === "zen" && btnZen) {
+        btnZen.classList.add("active");
+        state.speedFactor = 0.08;
+    } else if (state.speedMode === "einkFast" && btnEinkFast) {
+        btnEinkFast.classList.add("active");
+        state.speedFactor = 0.40;
+    } else if (btnSlow) {
+        btnSlow.classList.add("active");
+        state.speedFactor = 0.001;
+    }
+}
+
+function updateLocationUI() {
+    if (locationSelect) {
+        locationSelect.value = state.location;
+    }
+    if (customCoordsRow) {
+        customCoordsRow.style.display = state.location === "custom" ? "flex" : "none";
+    }
+    if (customLatInput) customLatInput.value = state.customLat;
+    if (customLonInput) customLonInput.value = state.customLon;
+}
+
 if (btnSlow) {
     btnSlow.addEventListener("click", () => {
-        [btnSlow, btnZen, btnEinkFast].forEach(b => b && b.classList.remove("active"));
-        btnSlow.classList.add("active");
+        state.speedMode = "slow";
         state.speedFactor = 0.001; // 24h Slow Art (1-2 rutor/dygn)
+        updateSpeedUI();
+        saveSettings();
     });
 }
 
 if (btnZen) {
     btnZen.addEventListener("click", () => {
-        [btnSlow, btnZen, btnEinkFast].forEach(b => b && b.classList.remove("active"));
-        btnZen.classList.add("active");
+        state.speedMode = "zen";
         state.speedFactor = 0.08; // Zen mode (1 studs var ~10s)
+        updateSpeedUI();
+        saveSettings();
     });
 }
 
 if (btnEinkFast) {
     btnEinkFast.addEventListener("click", () => {
-        [btnSlow, btnZen, btnEinkFast].forEach(b => b && b.classList.remove("active"));
-        btnEinkFast.classList.add("active");
+        state.speedMode = "einkFast";
         state.speedFactor = 0.40; // Max E-Ink Partial Refresh (~3 fps)
+        updateSpeedUI();
+        saveSettings();
     });
 }
 
@@ -395,13 +501,61 @@ if (daySlider) {
 if (locationSelect) {
     locationSelect.addEventListener("change", () => {
         state.location = locationSelect.value;
+        updateLocationUI();
+        saveSettings();
         initSimulation();
+    });
+}
+
+if (customLatInput && customLonInput) {
+    const handleCoordChange = () => {
+        state.customLat = parseFloat(customLatInput.value) || 59.33;
+        state.customLon = parseFloat(customLonInput.value) || 18.07;
+        LOCATIONS.custom.lat = state.customLat;
+        LOCATIONS.custom.lon = state.customLon;
+        saveSettings();
+        initSimulation();
+    };
+    customLatInput.addEventListener("change", handleCoordChange);
+    customLonInput.addEventListener("change", handleCoordChange);
+}
+
+if (geoBtn) {
+    geoBtn.addEventListener("click", () => {
+        if (!navigator.geolocation) {
+            alert("Geolokalisering stöds inte i din webbläsare.");
+            return;
+        }
+        geoBtn.textContent = "⏳ Söker...";
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const lat = parseFloat(pos.coords.latitude.toFixed(4));
+                const lon = parseFloat(pos.coords.longitude.toFixed(4));
+                state.location = "custom";
+                state.customLat = lat;
+                state.customLon = lon;
+                LOCATIONS.custom.lat = lat;
+                LOCATIONS.custom.lon = lon;
+                
+                updateLocationUI();
+                saveSettings();
+                initSimulation();
+                geoBtn.textContent = "📍 Hämtad!";
+                setTimeout(() => geoBtn.textContent = "📍 Hämta min plats", 2500);
+            },
+            (err) => {
+                geoBtn.textContent = "❌ Nekad/Kunde ej hämta";
+                setTimeout(() => geoBtn.textContent = "📍 Hämta min plats", 2500);
+            },
+            { enableHighAccuracy: true, timeout: 8000 }
+        );
     });
 }
 
 if (themeSelect) {
     themeSelect.addEventListener("change", () => {
         state.theme = themeSelect.value;
+        saveSettings();
     });
 }
 
@@ -428,7 +582,11 @@ function loop() {
     requestAnimationFrame(loop);
 }
 
-// Starta
+// Starta och synka inställningar från localStorage
+loadSettings();
+if (themeSelect) themeSelect.value = state.theme;
+updateSpeedUI();
+updateLocationUI();
 initSimulation();
 if (daySlider) daySlider.value = state.dayOfYear;
 if (dateDisplay) dateDisplay.textContent = dayOfYearToDateStr(state.dayOfYear);

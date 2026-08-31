@@ -179,22 +179,43 @@
 
         <div class="control-row">
             <div class="control-group">
-                <label>Plats i Sverige:</label>
+                <label>Plats: <button id="geoBtn" style="padding: 2px 6px; font-size: 0.68rem; margin-left: 8px;">📍 Hämta min plats</button></label>
                 <select id="locationSelect">
                     <option value="stockholm">Stockholm (59.33° N)</option>
                     <option value="goteborg">Göteborg (57.70° N)</option>
                     <option value="malmo">Malmö (55.60° N)</option>
-                    <option value="kiruna">Kiruna (67.85° N)</option>
+                    <option value="visby">Visby (57.63° N)</option>
+                    <option value="karlstad">Karlstad (59.38° N)</option>
+                    <option value="sundsvall">Sundsvall (62.39° N)</option>
+                    <option value="umea">Umeå (63.83° N)</option>
+                    <option value="kiruna">Kiruna (67.86° N)</option>
+                    <option value="custom">🎯 Egen koordinat...</option>
                 </select>
             </div>
             <div class="control-group">
                 <label>Färgtema:</label>
                 <select id="themeSelect">
-                    <option value="nordic">Nordic Slate (Gråblå & Gräddvit)</option>
+                    <option value="nordic">Nordic Slate (Skiffer & Is)</option>
                     <option value="eink">E-Ink Minimal (Svart & Vit)</option>
-                    <option value="arcade">70s Arcade (Svart & Grön)</option>
-                    <option value="amber">Vintage Amber</option>
+                    <option value="paper_charcoal">Wabi-Sabi (Papper & Kol)</option>
+                    <option value="aurora">Aurora (Polarsken & Natt)</option>
+                    <option value="falu">Falu Rödfärg (Linolja & Slam)</option>
+                    <option value="terracotta">Terracotta & Sand</option>
+                    <option value="amber">Vintage Amber (Bärnsten)</option>
+                    <option value="arcade">70s Arcade (Fosforgrön)</option>
+                    <option value="cyberpunk">Synthwave (Isblå & Magenta)</option>
                 </select>
+            </div>
+        </div>
+
+        <div id="customCoordsRow" class="control-row" style="display: none;">
+            <div class="control-group">
+                <label>Latitud (°N):</label>
+                <input type="number" id="customLatInput" step="0.01" value="59.33" style="background: #1c272b; color: #c9d1d9; border: 1px solid rgba(255,255,255,0.1); padding: 5px 8px; border-radius: 6px; font-size: 0.8rem;">
+            </div>
+            <div class="control-group">
+                <label>Longitud (°E):</label>
+                <input type="number" id="customLonInput" step="0.01" value="18.07" style="background: #1c272b; color: #c9d1d9; border: 1px solid rgba(255,255,255,0.1); padding: 5px 8px; border-radius: 6px; font-size: 0.8rem;">
             </div>
         </div>
 
