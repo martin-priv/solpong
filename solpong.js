@@ -113,9 +113,9 @@ let state = {
     customLat: 59.3293,
     customLon: 18.0686,
     customName: "Egen plats",
-    theme: "nordic",
+    theme: "paper_charcoal", // Default: Wabi-Sabi (Papper & Kol)
     dayOfYear: getTodayDayOfYear(),
-    speedFactor: 0.001, // Default: 🔴 1x Dygnsrytm (24h)
+    speedFactor: 0.001, // Default: 🔴 Dygnsrytm (24h)
     speedMode: "slow"
 };
 
