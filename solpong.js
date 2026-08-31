@@ -162,6 +162,35 @@ function loadSettings() {
     }
 }
 
+const GRID_SIZE = 20; // 20x20 = 400 block
+const ARENA_SIZE = 460;
+const TILE_SIZE = ARENA_SIZE / GRID_SIZE; // 23px per block
+const BAR_HEIGHT = 32; // Minimalistisk fot för klockslag
+
+let grid = []; // 0 = Ljus, 1 = Mörk
+
+// 1. MÖRKA BOLLEN (Kör i Ljus botten, studsar mot Mörka block och erövrar dem)
+let darkBall = {
+    x: 0,
+    y: 0,
+    vx: 5.0,
+    vy: 3.5,
+    radius: 9,
+    enemyTile: 1,
+    flipTo: 0
+};
+
+// 2. LJUSA BOLLEN (Kör i Mörk botten, studsar mot Ljusa block och erövrar dem)
+let lightBall = {
+    x: 0,
+    y: 0,
+    vx: -5.0,
+    vy: -3.5,
+    radius: 9,
+    enemyTile: 0,
+    flipTo: 1
+};
+
 // --- Astronomiska Solberäkningar (NOAA Standard) ---
 function calculateSolarTimes(lat, lon, dayOfYear) {
     const daysInYear = 365;
