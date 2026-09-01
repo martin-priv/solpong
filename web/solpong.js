@@ -661,6 +661,7 @@ if (resetBtn) {
 }
 
 const toggleSettingsBtn = document.getElementById("toggleSettingsBtn");
+const closeSettingsBtn = document.getElementById("closeSettingsBtn");
 const devControls = document.getElementById("devControls");
 
 if (toggleSettingsBtn && devControls) {
@@ -669,10 +670,21 @@ if (toggleSettingsBtn && devControls) {
     });
 }
 
+if (closeSettingsBtn && devControls) {
+    closeSettingsBtn.addEventListener("click", () => {
+        devControls.classList.add("hidden");
+    });
+}
+
 // -------------------------------------------------------------
 // FULLSKÄRM & AMBIENT KIOSK HANTERING
 // -------------------------------------------------------------
 function toggleFullscreen() {
+    // Stäng alltid inställningar automatiskt när vi går till fullskärm
+    if (devControls) {
+        devControls.classList.add("hidden");
+    }
+
     if (!document.fullscreenElement && !document.webkitFullscreenElement) {
         const el = document.documentElement;
         const rfs = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
@@ -703,8 +715,21 @@ if (artFrame) {
     artFrame.addEventListener("dblclick", toggleFullscreen);
 }
 
+if (canvas && devControls) {
+    canvas.addEventListener("click", () => {
+        // Klick på tavlan stänger inställningar om de är öppna
+        if (!devControls.classList.contains("hidden")) {
+            devControls.classList.add("hidden");
+        }
+    });
+}
+
 window.addEventListener("keydown", (e) => {
-    if (e.key === "f" || e.key === "F") {
+    if (e.key === "Escape") {
+        if (devControls && !devControls.classList.contains("hidden")) {
+            devControls.classList.add("hidden");
+        }
+    } else if (e.key === "f" || e.key === "F") {
         if (e.target.tagName !== "INPUT") {
             e.preventDefault();
             toggleFullscreen();
@@ -721,6 +746,7 @@ window.addEventListener("resize", handleResize);
 document.addEventListener("fullscreenchange", () => {
     if (document.fullscreenElement) {
         document.body.classList.add("is-fullscreen");
+        if (devControls) devControls.classList.add("hidden");
     } else {
         document.body.classList.remove("is-fullscreen");
     }
