@@ -182,14 +182,17 @@ function loadSettings() {
             state.customName = saved.customName;
             LOCATIONS.custom.name = saved.customName;
         }
+        // Bakåtkompatibilitet: Migrera gamla inställningar från tidigare versioner
         if (saved.speedMode === "slow") saved.speedMode = "deep-zen";
         if (saved.speedMode === "einkFast") saved.speedMode = "stress";
+        if (saved.speedMode === "realtime") saved.speedMode = "24h";
+
         if (saved.speedMode && SPEED_MODES[saved.speedMode]) {
             state.speedMode = saved.speedMode;
-            state.speedFactor = SPEED_MODES[saved.speedMode].factor;
-        } else if (typeof saved.speedFactor === "number") {
-            state.speedFactor = saved.speedFactor;
+        } else {
+            state.speedMode = "24h";
         }
+        state.speedFactor = SPEED_MODES[state.speedMode].factor;
     } catch (e) {
         console.warn("Could not load from localStorage", e);
     }
