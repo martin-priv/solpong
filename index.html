@@ -237,11 +237,20 @@
             background: #ffffff;
         }
 
+        .frame-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            margin-top: 14px;
+            transition: opacity 0.3s ease;
+        }
+
         .gear-btn {
             background: transparent;
             border: 1px solid rgba(255, 255, 255, 0.06);
             color: #6a7f85;
-            font-size: 12px;
+            font-size: 13px;
             width: 28px;
             height: 28px;
             border-radius: 50%;
@@ -251,7 +260,6 @@
             cursor: pointer;
             opacity: 0.35;
             transition: all 0.2s ease;
-            margin-top: 16px;
             padding: 0;
         }
 
@@ -260,19 +268,80 @@
             background: rgba(255, 255, 255, 0.06);
             border-color: rgba(255, 255, 255, 0.18);
             color: #d6e0dd;
-            transform: rotate(45deg);
+        }
+
+        /* Fullskärm / Kant-till-kant läge för alla skärmar och e-ink */
+        body.is-fullscreen {
+            overflow: hidden;
+            padding: 0;
+            background: #000;
+        }
+
+        body.is-fullscreen .art-frame {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            max-width: none;
+            max-height: none;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+            padding: 0;
+            margin: 0;
+            z-index: 10;
+        }
+
+        body.is-fullscreen canvas {
+            border-radius: 0;
+            box-shadow: none;
+            width: 100vw !important;
+            height: 100vh !important;
+        }
+
+        body.is-fullscreen .frame-actions {
+            position: fixed;
+            bottom: 18px;
+            right: 20px;
+            margin: 0;
+            z-index: 50;
+        }
+
+        body.is-fullscreen .dev-controls {
+            position: fixed;
+            bottom: 58px;
+            right: 20px;
+            z-index: 50;
+            margin: 0;
+            max-height: calc(100vh - 80px);
+            overflow-y: auto;
+        }
+
+        /* Ambient Kiosk-läge: dölj kontroller och muspekare vid inaktivitet */
+        body.mouse-idle {
+            cursor: none;
+        }
+
+        body.mouse-idle .frame-actions,
+        body.mouse-idle.is-fullscreen .dev-controls {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
         }
     </style>
 </head>
 <body>
 
     <!-- 🖼️ TAVLAN SOM HÄNGER PÅ VÄGGEN -->
-    <div class="art-frame">
+    <div class="art-frame" id="artFrame">
         <canvas id="pongCanvas" width="460" height="492"></canvas>
     </div>
 
-    <!-- ⚙️ SUBTIL MINIMALISTISK KNAPP FÖR ATT FÄLLA UT INSTÄLLNINGAR -->
-    <button id="toggleSettingsBtn" class="gear-btn" title="Inställningar" aria-label="Inställningar">⚙️</button>
+    <!-- 🎛️ SUBTILA KNAPPAR FÖR INSTÄLLNINGAR OCH FULLSKÄRM -->
+    <div class="frame-actions">
+        <button id="toggleSettingsBtn" class="gear-btn" title="Inställningar" aria-label="Inställningar">⚙️</button>
+        <button id="fullscreenBtn" class="gear-btn" title="Fullskärm (F eller dubbelklick)" aria-label="Fullskärm">⛶</button>
+    </div>
 
     <!-- 🛠️ INSTÄLLNINGSPANEL (Sober & Avskalad) -->
     <div id="devControls" class="dev-controls hidden">

@@ -1,4 +1,4 @@
-// Sol-Pong: Allt-i-Ett Tavelklocka för Väggmontage (ESP32 / E-Paper redo)
+// Sol-Pong: Allt-i-Ett Tavelklocka för Väggmontage (ESP32 / E-Paper / Fullskärm redo)
 const canvas = document.getElementById("pongCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -15,10 +15,19 @@ const LOCATIONS = {
 };
 
 const THEMES = {
+    paper_charcoal: {
+        name: "Wabi-Sabi",
+        dayColor: "#f2ede4",
+        nightColor: "#252422",
+        barBg: "#181716",
+        textPrimary: "#f2ede4",
+        textSecondary: "#8c877d",
+        accent: "#eb5e28"
+    },
     nordic: {
         name: "Nordic Slate",
-        dayColor: "#e5ece9",       // Ljus gräddvit/isgrå
-        nightColor: "#22424d",     // Djup nordisk skifferblå
+        dayColor: "#e5ece9",
+        nightColor: "#22424d",
         barBg: "#16282e",
         textPrimary: "#ffffff",
         textSecondary: "#8da9b0",
@@ -33,19 +42,10 @@ const THEMES = {
         textSecondary: "#999999",
         accent: "#ffffff"
     },
-    paper_charcoal: {
-        name: "Wabi-Sabi",
-        dayColor: "#f2ede4",       // Varmt linne/råpapper
-        nightColor: "#252422",     // Japanskt kol
-        barBg: "#181716",
-        textPrimary: "#f2ede4",
-        textSecondary: "#8c877d",
-        accent: "#eb5e28"
-    },
     aurora: {
         name: "Aurora",
-        dayColor: "#4ef2bb",       // Neongrönt polarsken
-        nightColor: "#091424",     // Djup arktisk natt
+        dayColor: "#4ef2bb",
+        nightColor: "#091424",
         barBg: "#050d17",
         textPrimary: "#4ef2bb",
         textSecondary: "#307a68",
@@ -53,8 +53,8 @@ const THEMES = {
     },
     falu: {
         name: "Falu Rödfärg",
-        dayColor: "#f4eee1",       // Linoljevit
-        nightColor: "#6b201c",     // Genuin Falu slamfärg
+        dayColor: "#f4eee1",
+        nightColor: "#6b201c",
         barBg: "#3d110f",
         textPrimary: "#f4eee1",
         textSecondary: "#a8716e",
@@ -62,8 +62,8 @@ const THEMES = {
     },
     terracotta: {
         name: "Terracotta & Sand",
-        dayColor: "#ebe2d5",       // Ljus sandsten
-        nightColor: "#8c4632",     // Varm terracotta
+        dayColor: "#ebe2d5",
+        nightColor: "#8c4632",
         barBg: "#4a241b",
         textPrimary: "#ebe2d5",
         textSecondary: "#b89084",
@@ -89,8 +89,8 @@ const THEMES = {
     },
     cyberpunk: {
         name: "Synthwave",
-        dayColor: "#00f0ff",       // Isblå neon
-        nightColor: "#220033",     // Djup nattlila
+        dayColor: "#00f0ff",
+        nightColor: "#220033",
         barBg: "#12001c",
         textPrimary: "#00f0ff",
         textSecondary: "#8f3099",
@@ -108,29 +108,32 @@ function getTodayDayOfYear() {
     return Math.floor(diff / oneDay);
 }
 
+// -------------------------------------------------------------
+// UNIVERSELLA HASTIGHETSLÄGEN (Skalar med skärmens diagonal!)
+// -------------------------------------------------------------
 const SPEED_MODES = {
     "24h": {
         name: "24h",
-        label: "🔴 24h",
-        factor: 0.000041, // True 24h: ~1-2 studs per dygn (~12h per korsning av arenan)
+        label: "24h",
+        multiplier: 1.0,     // 1x: Exakt 2 fulla korsningar av diagonalen per 24h
         desc: "True 24h rörelse (1-2 studs per dygn)"
     },
     "deep-zen": {
         name: "deep-zen",
-        label: "🧘 Deep-Zen",
-        factor: 0.001,    // Tidigare 24h: rör sig så långsamt att man knappt ser det om man inte tittar ordentligt (~1 studs var 20-25 min)
+        label: "Deep-Zen",
+        multiplier: 25.0,    // 25x: ~1 studs var 20-25 minuter
         desc: "Deep-Zen (~1 studs var 20-25 min)"
     },
     "zen": {
         name: "zen",
-        label: "🍃 Zen",
-        factor: 0.08,     // Zen: ~1 studs var 10s
+        label: "Zen",
+        multiplier: 2000.0,  // ~1 studs var 10-15s
         desc: "Zen (~1 studs var 10s)"
     },
     "stress": {
         name: "stress",
-        label: "⚡️ Stress",
-        factor: 0.40,     // Snabbdemo
+        label: "Stress",
+        multiplier: 10000.0, // Snabbdemo (~2-3 sekunder)
         desc: "Stress (Snabbdemo)"
     }
 };
@@ -140,9 +143,8 @@ let state = {
     customLat: 59.3293,
     customLon: 18.0686,
     customName: "Egen plats",
-    theme: "paper_charcoal", // Default: Wabi-Sabi (Papper & Kol)
+    theme: "paper_charcoal",
     dayOfYear: getTodayDayOfYear(),
-    speedFactor: SPEED_MODES["24h"].factor,
     speedMode: "24h"
 };
 
@@ -154,7 +156,6 @@ function saveSettings() {
             customLon: state.customLon,
             customName: state.customName,
             theme: state.theme,
-            speedFactor: state.speedFactor,
             speedMode: state.speedMode
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -182,7 +183,6 @@ function loadSettings() {
             state.customName = saved.customName;
             LOCATIONS.custom.name = saved.customName;
         }
-        // Bakåtkompatibilitet: Migrera gamla inställningar från tidigare versioner
         if (saved.speedMode === "slow") saved.speedMode = "deep-zen";
         if (saved.speedMode === "einkFast") saved.speedMode = "stress";
         if (saved.speedMode === "realtime") saved.speedMode = "24h";
@@ -192,42 +192,86 @@ function loadSettings() {
         } else {
             state.speedMode = "24h";
         }
-        state.speedFactor = SPEED_MODES[state.speedMode].factor;
     } catch (e) {
         console.warn("Could not load from localStorage", e);
     }
 }
 
-const GRID_SIZE = 20; // 20x20 = 400 block
-const ARENA_SIZE = 460;
-const TILE_SIZE = ARENA_SIZE / GRID_SIZE; // 23px per block
-const BAR_HEIGHT = 32; // Minimalistisk fot för klockslag
+// -------------------------------------------------------------
+// DYNAMISKA DIMENSIONER & RUTNÄT (Passar alla skärmar och e-ink!)
+// -------------------------------------------------------------
+let arenaWidth = 460;
+let arenaHeight = 460;
+let barHeight = 32;
+let gridCols = 20;
+let gridRows = 20;
+let tileWidth = 23;
+let tileHeight = 23;
+let grid = [];
 
-let grid = []; // 0 = Ljus, 1 = Mörk
-
-// 1. MÖRKA BOLLEN (Kör i Ljus botten, studsar mot Mörka block och erövrar dem)
 let darkBall = {
     x: 0,
     y: 0,
-    vx: 5.0,
-    vy: 3.5,
+    vx: 0.8,
+    vy: 0.6,
     radius: 9,
     enemyTile: 1,
     flipTo: 0
 };
 
-// 2. LJUSA BOLLEN (Kör i Mörk botten, studsar mot Ljusa block och erövrar dem)
 let lightBall = {
     x: 0,
     y: 0,
-    vx: -5.0,
-    vy: -3.5,
+    vx: -0.8,
+    vy: -0.6,
     radius: 9,
     enemyTile: 0,
     flipTo: 1
 };
 
-// --- Astronomiska Solberäkningar (NOAA Standard) ---
+function updateDimensions() {
+    const isFullscreen = !!document.fullscreenElement || document.body.classList.contains("is-fullscreen");
+    let displayW, displayH;
+
+    if (isFullscreen) {
+        displayW = window.innerWidth;
+        displayH = window.innerHeight;
+    } else {
+        const maxW = Math.min(window.innerWidth - 32, 480);
+        displayW = Math.max(280, maxW);
+        displayH = displayW + 32;
+    }
+
+    barHeight = Math.max(26, Math.min(46, Math.round(displayH * 0.065)));
+    arenaWidth = displayW;
+    arenaHeight = displayH - barHeight;
+
+    const targetSize = Math.max(18, Math.min(30, Math.min(arenaWidth, arenaHeight) / 20));
+    gridCols = Math.max(10, Math.round(arenaWidth / targetSize));
+    gridRows = Math.max(10, Math.round(arenaHeight / targetSize));
+
+    tileWidth = arenaWidth / gridCols;
+    tileHeight = arenaHeight / gridRows;
+
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(displayW * dpr);
+    canvas.height = Math.round(displayH * dpr);
+    canvas.style.width = displayW + "px";
+    canvas.style.height = displayH + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const ballR = Math.max(5, Math.round(Math.min(tileWidth, tileHeight) * 0.40));
+    darkBall.radius = ballR;
+    lightBall.radius = ballR;
+}
+
+function getFrameSpeed() {
+    const diagonal = Math.hypot(arenaWidth, arenaHeight);
+    const baseSpeedPxPerSec = (2 * diagonal) / 86400;
+    const mode = SPEED_MODES[state.speedMode] || SPEED_MODES["24h"];
+    return (baseSpeedPxPerSec * mode.multiplier) / 60;
+}
+
 function calculateSolarTimes(lat, lon, dayOfYear) {
     const daysInYear = 365;
     const gamma = (2 * Math.PI / daysInYear) * (dayOfYear - 1);
@@ -291,91 +335,84 @@ function dayOfYearToDateStr(day) {
     return `${d.getDate()} ${months[d.getMonth()]}${note}`;
 }
 
-// --- Starta om simuleringen ---
 function initSimulation() {
     const loc = LOCATIONS[state.location] || LOCATIONS.stockholm;
     const solar = calculateSolarTimes(loc.lat, loc.lon, state.dayOfYear);
-    const dayCols = Math.round(GRID_SIZE * solar.daylightRatio);
+    const dayCols = Math.round(gridCols * solar.daylightRatio);
 
     grid = [];
-    for (let y = 0; y < GRID_SIZE; y++) {
+    for (let y = 0; y < gridRows; y++) {
         const row = [];
-        for (let x = 0; x < GRID_SIZE; x++) {
+        for (let x = 0; x < gridCols; x++) {
             row.push(x < dayCols ? 0 : 1);
         }
         grid.push(row);
     }
 
-    // Placera Dark Ball på Ljus sida
-    darkBall.x = Math.max(30, (dayCols * TILE_SIZE) / 2);
-    darkBall.y = ARENA_SIZE * 0.35;
-    darkBall.vx = 4.5;
-    darkBall.vy = 3.2;
+    darkBall.x = Math.max(25, (dayCols * tileWidth) / 2);
+    darkBall.y = arenaHeight * 0.35;
+    const mag1 = Math.hypot(4.5, 3.2);
+    darkBall.vx = 4.5 / mag1;
+    darkBall.vy = 3.2 / mag1;
 
-    // Placera Light Ball på Mörk sida
-    const nightW = (GRID_SIZE - dayCols) * TILE_SIZE;
-    lightBall.x = Math.min(ARENA_SIZE - 30, (dayCols * TILE_SIZE) + (nightW / 2));
-    lightBall.y = ARENA_SIZE * 0.65;
-    lightBall.vx = -4.5;
-    lightBall.vy = -3.2;
+    const nightW = (gridCols - dayCols) * tileWidth;
+    lightBall.x = Math.min(arenaWidth - 25, (dayCols * tileWidth) + (nightW / 2));
+    lightBall.y = arenaHeight * 0.65;
+    const mag2 = Math.hypot(-4.5, -3.2);
+    lightBall.vx = -4.5 / mag2;
+    lightBall.vy = -3.2 / mag2;
 
-    // ⚡️ Snabb "Pre-roll" i minnet (250 steg):
-    // Gör att frontlinjen genast blir levande, naggad och organisk istället för ett sterilt rakt streck!
+    const preRollSpeed = Math.min(tileWidth, tileHeight) * 0.35;
     for (let i = 0; i < 280; i++) {
-        stepPhysics(darkBall, 1.0);
-        stepPhysics(lightBall, 1.0);
+        stepPhysics(darkBall, preRollSpeed, 1.0);
+        stepPhysics(lightBall, preRollSpeed, 1.0);
     }
 }
 
-// --- Fysik & Blockövertagande vid Kollision ---
 function stepPhysics(ball, speedOverride = null, dt = 1.0) {
-    const speed = (speedOverride !== null ? speedOverride : state.speedFactor) * dt;
+    const speed = (speedOverride !== null ? speedOverride : getFrameSpeed()) * dt;
     ball.x += ball.vx * speed;
     ball.y += ball.vy * speed;
 
-    // 1. Studsa mot ytterväggar i arenan (0 till ARENA_SIZE)
     if (ball.x - ball.radius < 0) {
         ball.x = ball.radius;
         ball.vx = Math.abs(ball.vx);
-    } else if (ball.x + ball.radius > ARENA_SIZE) {
-        ball.x = ARENA_SIZE - ball.radius;
+    } else if (ball.x + ball.radius > arenaWidth) {
+        ball.x = arenaWidth - ball.radius;
         ball.vx = -Math.abs(ball.vx);
     }
 
     if (ball.y - ball.radius < 0) {
         ball.y = ball.radius;
         ball.vy = Math.abs(ball.vy);
-    } else if (ball.y + ball.radius > ARENA_SIZE) {
-        ball.y = ARENA_SIZE - ball.radius;
+    } else if (ball.y + ball.radius > arenaHeight) {
+        ball.y = arenaHeight - ball.radius;
         ball.vy = -Math.abs(ball.vy);
     }
 
-    // 2. Studsa mot och erövra motståndarblock (med Astronomisk Soljämvikt ⚖️)
     const angles = [0, Math.PI / 4, Math.PI / 2, (3 * Math.PI) / 4, Math.PI, (5 * Math.PI) / 4, (3 * Math.PI) / 2, (7 * Math.PI) / 4];
     
-    // Räkna aktuell solbalans på brädet
     let currentDayCount = 0;
-    for (let y = 0; y < GRID_SIZE; y++) {
-        for (let x = 0; x < GRID_SIZE; x++) {
+    for (let y = 0; y < gridRows; y++) {
+        for (let x = 0; x < gridCols; x++) {
             if (grid[y][x] === 0) currentDayCount++;
         }
     }
-    const loc = LOCATIONS[state.location];
+    const totalTiles = gridCols * gridRows;
+    const loc = LOCATIONS[state.location] || LOCATIONS.stockholm;
     const solar = calculateSolarTimes(loc.lat, loc.lon, state.dayOfYear);
-    const targetDayCount = Math.round(GRID_SIZE * GRID_SIZE * solar.daylightRatio);
-    const diff = currentDayCount - targetDayCount; // >0: för mycket dag, <0: för mycket natt
+    const targetDayCount = Math.round(totalTiles * solar.daylightRatio);
+    const diff = currentDayCount - targetDayCount;
+    const normalizedDiff = diff / totalTiles;
 
-    // Dynamisk Jämviktskraft (håller frontlinjen bunden till solens faktiska timmar)
     let flipChance = 1.0;
     if (ball.flipTo === 0) {
-        // Dark ball vill göra fler dagrutor (0)
-        if (diff > 4) {
-            flipChance = Math.max(0.25, 1.0 - (diff - 4) * 0.15);
+        if (normalizedDiff > 0.01) {
+            flipChance = Math.max(0.20, 1.0 - (normalizedDiff * 15));
         }
     } else {
-        // Light ball vill göra fler nattrutor (1)
-        if (diff < -4) {
-            flipChance = Math.max(0.25, 1.0 - (-diff - 4) * 0.15);
+        if (normalizedDiff < -0.01) {
+            flipChance = Math.max(0.20, 1.0 - (-normalizedDiff * 15));
         }
     }
 
@@ -383,33 +420,28 @@ function stepPhysics(ball, speedOverride = null, dt = 1.0) {
         const checkX = ball.x + Math.cos(angle) * ball.radius;
         const checkY = ball.y + Math.sin(angle) * ball.radius;
 
-        const gx = Math.floor(checkX / TILE_SIZE);
-        const gy = Math.floor(checkY / TILE_SIZE);
+        const gx = Math.floor(checkX / tileWidth);
+        const gy = Math.floor(checkY / tileHeight);
 
-        if (gx >= 0 && gx < GRID_SIZE && gy >= 0 && gy < GRID_SIZE) {
+        if (gx >= 0 && gx < gridCols && gy >= 0 && gy < gridRows) {
             if (grid[gy][gx] === ball.enemyTile) {
-                // Erövra rutan med jämviktssannolikhet (garanterar alltid minst 25% så den aldrig fastnar i fickor)
                 if (Math.random() <= flipChance) {
                     grid[gy][gx] = ball.flipTo;
                 }
 
-                // Studsa!
                 if (Math.abs(Math.cos(angle)) > Math.abs(Math.sin(angle))) {
                     ball.vx = -ball.vx;
                 } else {
                     ball.vy = -ball.vy;
                 }
 
-                // Liten vinkeljitter för naturlig studs
-                const jitter = (Math.random() - 0.5) * 0.20;
+                const jitter = (Math.random() - 0.5) * 0.15;
                 ball.vx += jitter;
                 ball.vy -= jitter;
 
-                // Normalisera fart
-                const currentSpeed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
-                const targetSpeed = 5.2;
-                ball.vx = (ball.vx / currentSpeed) * targetSpeed;
-                ball.vy = (ball.vy / currentSpeed) * targetSpeed;
+                const mag = Math.hypot(ball.vx, ball.vy) || 1.0;
+                ball.vx /= mag;
+                ball.vy /= mag;
 
                 break;
             }
@@ -417,53 +449,43 @@ function stepPhysics(ball, speedOverride = null, dt = 1.0) {
     }
 }
 
-// --- Rita Allt (Arenan + Integrerad Sol-Typografi i själva Tavlan!) ---
 function render() {
     const theme = THEMES[state.theme] || THEMES.nordic;
     const loc = LOCATIONS[state.location] || LOCATIONS.stockholm;
     const solar = calculateSolarTimes(loc.lat, loc.lon, state.dayOfYear);
 
-    // 1. Rita Rutnätet och räkna block
-    let dayCount = 0;
-    let nightCount = 0;
-
-    for (let y = 0; y < GRID_SIZE; y++) {
-        for (let x = 0; x < GRID_SIZE; x++) {
+    for (let y = 0; y < gridRows; y++) {
+        for (let x = 0; x < gridCols; x++) {
             const isDay = grid[y][x] === 0;
-            if (isDay) dayCount++;
-            else nightCount++;
-
             ctx.fillStyle = isDay ? theme.dayColor : theme.nightColor;
-            ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE + 0.5, TILE_SIZE + 0.5);
+            ctx.fillRect(
+                Math.floor(x * tileWidth),
+                Math.floor(y * tileHeight),
+                Math.ceil(tileWidth) + 0.5,
+                Math.ceil(tileHeight) + 0.5
+            );
         }
     }
 
-    // 2. Rita Mörka bollen (på ljus botten)
     ctx.beginPath();
     ctx.arc(darkBall.x, darkBall.y, darkBall.radius, 0, Math.PI * 2);
     ctx.fillStyle = theme.nightColor;
     ctx.fill();
 
-    // 3. Rita Ljusa bollen (på mörk botten)
     ctx.beginPath();
     ctx.arc(lightBall.x, lightBall.y, lightBall.radius, 0, Math.PI * 2);
     ctx.fillStyle = theme.dayColor;
     ctx.fill();
 
-    // -------------------------------------------------------------
-    // 4. REN MINIMALISM: ENDAST KLOCKSLAG FÖR UPPGÅNG OCH NEDGÅNG
-    // -------------------------------------------------------------
-    const barY = ARENA_SIZE;
-    
+    const barY = arenaHeight;
     ctx.fillStyle = theme.barBg;
-    ctx.fillRect(0, barY, ARENA_SIZE, BAR_HEIGHT);
+    ctx.fillRect(0, barY, arenaWidth, barHeight);
 
-    // Subtil hårfin delare
     ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, barY);
-    ctx.lineTo(ARENA_SIZE, barY);
+    ctx.lineTo(arenaWidth, barY);
     ctx.stroke();
 
     const sunriseStr = solar.isMidnightSun ? "00:00" : (solar.isPolarNight ? "--:--" : secToHHMM(solar.sunriseSec));
@@ -471,24 +493,24 @@ function render() {
     const dayPct = Math.round(solar.daylightRatio * 100);
     const balanceStr = solar.isMidnightSun ? "100% dag" : (solar.isPolarNight ? "0% dag" : `${dayPct}% dag`);
 
-    ctx.font = "400 11px 'SF Mono', Monaco, 'Courier New', monospace";
+    const fontSize = Math.max(10, Math.min(13, Math.round(barHeight * 0.35)));
+    ctx.font = `400 ${fontSize}px 'SF Mono', Monaco, 'Courier New', monospace`;
     ctx.textBaseline = "middle";
     ctx.fillStyle = theme.textSecondary;
 
-    // Vänster: Klockslag för soluppgång
+    const pad = Math.max(14, Math.round(arenaWidth * 0.035));
+    const centerY = barY + (barHeight / 2);
+
     ctx.textAlign = "left";
-    ctx.fillText(sunriseStr, 14, barY + (BAR_HEIGHT / 2));
+    ctx.fillText(sunriseStr, pad, centerY);
 
-    // Mitten: Balansen mellan natt och dag (t.ex. 59% dag)
     ctx.textAlign = "center";
-    ctx.fillText(balanceStr, ARENA_SIZE / 2, barY + (BAR_HEIGHT / 2));
+    ctx.fillText(balanceStr, arenaWidth / 2, centerY);
 
-    // Höger: Klockslag för solnedgång
     ctx.textAlign = "right";
-    ctx.fillText(sunsetStr, ARENA_SIZE - 14, barY + (BAR_HEIGHT / 2));
+    ctx.fillText(sunsetStr, arenaWidth - pad, centerY);
 }
 
-// --- Kontroller ---
 const daySlider = document.getElementById("dayOfYearSlider");
 const dateDisplay = document.getElementById("dateDisplay");
 const locationSelect = document.getElementById("locationSelect");
@@ -508,7 +530,6 @@ function updateSpeedUI() {
     [btn24h, btnDeepZen, btnZen, btnStress].forEach(b => b && b.classList.remove("active"));
     const mode = SPEED_MODES[state.speedMode] ? state.speedMode : "24h";
     state.speedMode = mode;
-    state.speedFactor = SPEED_MODES[mode].factor;
 
     if (mode === "deep-zen" && btnDeepZen) {
         btnDeepZen.classList.add("active");
@@ -535,7 +556,6 @@ function updateLocationUI() {
 if (btn24h) {
     btn24h.addEventListener("click", () => {
         state.speedMode = "24h";
-        state.speedFactor = SPEED_MODES["24h"].factor;
         updateSpeedUI();
         saveSettings();
     });
@@ -544,7 +564,6 @@ if (btn24h) {
 if (btnDeepZen) {
     btnDeepZen.addEventListener("click", () => {
         state.speedMode = "deep-zen";
-        state.speedFactor = SPEED_MODES["deep-zen"].factor;
         updateSpeedUI();
         saveSettings();
     });
@@ -553,7 +572,6 @@ if (btnDeepZen) {
 if (btnZen) {
     btnZen.addEventListener("click", () => {
         state.speedMode = "zen";
-        state.speedFactor = SPEED_MODES["zen"].factor;
         updateSpeedUI();
         saveSettings();
     });
@@ -562,7 +580,6 @@ if (btnZen) {
 if (btnStress) {
     btnStress.addEventListener("click", () => {
         state.speedMode = "stress";
-        state.speedFactor = SPEED_MODES["stress"].factor;
         updateSpeedUI();
         saveSettings();
     });
@@ -619,11 +636,11 @@ if (geoBtn) {
                 saveSettings();
                 initSimulation();
                 geoBtn.textContent = "📍 Hämtad!";
-                setTimeout(() => geoBtn.textContent = "📍 Hämta min plats", 2500);
+                setTimeout(() => geoBtn.textContent = "📍 GPS", 2500);
             },
             (err) => {
-                geoBtn.textContent = "❌ Nekad/Kunde ej hämta";
-                setTimeout(() => geoBtn.textContent = "📍 Hämta min plats", 2500);
+                geoBtn.textContent = "❌ Kunde ej hämta";
+                setTimeout(() => geoBtn.textContent = "📍 GPS", 2500);
             },
             { enableHighAccuracy: true, timeout: 8000 }
         );
@@ -652,9 +669,85 @@ if (toggleSettingsBtn && devControls) {
     });
 }
 
+// -------------------------------------------------------------
+// FULLSKÄRM & AMBIENT KIOSK HANTERING
+// -------------------------------------------------------------
+function toggleFullscreen() {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        const el = document.documentElement;
+        const rfs = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+        if (rfs) {
+            rfs.call(el).catch(() => {
+                document.body.classList.toggle("is-fullscreen");
+                handleResize();
+            });
+        } else {
+            document.body.classList.toggle("is-fullscreen");
+            handleResize();
+        }
+    } else {
+        const efs = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+        if (efs) efs.call(document);
+        document.body.classList.remove("is-fullscreen");
+        handleResize();
+    }
+}
+
+const fullscreenBtn = document.getElementById("fullscreenBtn");
+if (fullscreenBtn) {
+    fullscreenBtn.addEventListener("click", toggleFullscreen);
+}
+
+const artFrame = document.getElementById("artFrame");
+if (artFrame) {
+    artFrame.addEventListener("dblclick", toggleFullscreen);
+}
+
+window.addEventListener("keydown", (e) => {
+    if (e.key === "f" || e.key === "F") {
+        if (e.target.tagName !== "INPUT") {
+            e.preventDefault();
+            toggleFullscreen();
+        }
+    }
+});
+
+function handleResize() {
+    updateDimensions();
+    initSimulation();
+}
+
+window.addEventListener("resize", handleResize);
+document.addEventListener("fullscreenchange", () => {
+    if (document.fullscreenElement) {
+        document.body.classList.add("is-fullscreen");
+    } else {
+        document.body.classList.remove("is-fullscreen");
+    }
+    handleResize();
+});
+
+let idleTimer = null;
+function onUserActivity() {
+    document.body.classList.remove("mouse-idle");
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+        const isDevOpen = devControls && !devControls.classList.contains("hidden");
+        if (!isDevOpen) {
+            document.body.classList.add("mouse-idle");
+        }
+    }, 3500);
+}
+window.addEventListener("mousemove", onUserActivity);
+window.addEventListener("touchstart", onUserActivity);
+window.addEventListener("keydown", onUserActivity);
+onUserActivity();
+
+// -------------------------------------------------------------
+// HUVUDLOOP MED DELTA-TIME
+// -------------------------------------------------------------
 let lastLoopTime = performance.now();
 
-// Huvudloop med delta-time (normaliserad mot 60 FPS för jämn rörelse oavsett skärmens Hz)
 function loop(now = performance.now()) {
     const elapsed = now - lastLoopTime;
     const dt = Math.min(2.0, elapsed / (1000 / 60));
@@ -666,11 +759,11 @@ function loop(now = performance.now()) {
     requestAnimationFrame(loop);
 }
 
-// Starta och synka inställningar från localStorage
 loadSettings();
 if (themeSelect) themeSelect.value = state.theme;
 updateSpeedUI();
 updateLocationUI();
+updateDimensions();
 initSimulation();
 if (daySlider) daySlider.value = state.dayOfYear;
 if (dateDisplay) dateDisplay.textContent = dayOfYearToDateStr(state.dayOfYear);
