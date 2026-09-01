@@ -1,10 +1,9 @@
 # 🌅 Sol-Pong 🌙
 
-> **En 24-timmars Slow Art-tavelklocka för det svenska solljuset**  
-> Inspirerad av Koen van Gilsts *Pong War / Yin-Yang*.
+> **Kampen om ljuset** — *Dygnet runt. Året runt. Ljus mot mörker.*  
+> En generativ Pong-duell mellan ljus och mörker där frontlinjen ritas om minut för minut utifrån solens astronomiska jämvikt.
 
 🌐 **Live Demo:** [martin-priv.github.io/solpong](https://martin-priv.github.io/solpong/)
-
 
 ---
 
@@ -12,13 +11,13 @@
 
 I Sverige varierar dagslängden dramatiskt över året – från vintersolståndets 6 timmar ljus i söder (och polarnatt i norr) till midsommaraftonens 18,5+ timmar ljus (och midnattssol).
 
-**Sol-Pong** visualiserar denna kosmiska balans som ett långsamt, meditativt konstverk på en vägghängd E-Paper / E-Ink-display eller i webbläsaren:
-* **Arenan (20x20 = 400 rutor):** Delas mellan Ljus (Dag) och Mörker (Natt) i exakt proportion till dagens soltimmar.
+**Sol-Pong** visualiserar denna kosmiska balans som ett långsamt, meditativt konstverk på en vägghängd display, E-Paper/E-Ink eller i webbläsaren:
+* **Dynamisk Arena:** Skalar automatiskt till alla bildförhållanden (16:9 widescreen, stående surfplatta, kvadrat eller mobil) med perfekt kvadratiska rutor.
 * **Två färgnegativa bollar:**
   * Den mörka bollen rör sig i det ljusa territoriet och erövrar mörka block vid frontlinjen.
   * Den ljusa bollen rör sig i det mörka territoriet och erövrar ljusa block.
-* **Slow Art (24h Dygnsrytm):** Bollen gör en hel resa över planen på 24 timmar och erövrar ~1–2 block per dygn i takt med att årstiderna skiftar!
-* **Sober skandinavisk typografi:** Inga onödiga mätare eller emojis – endast de rena klockslagen för dagens soluppgång och solnedgång.
+* **Universell Dygnsrytm (24h):** Hastigheten anpassas till skärmens diagonal så att bollen gör exakt 2 fulla korsningar (~1–2 studs) per dygn – i perfekt fas med solens faktiska gång.
+* **Sober skandinavisk minimalism:** Inga onödiga mätare eller emojis – endast de rena klockslagen för dagens soluppgång och solnedgång, samt ett ambient kiosk-läge som tonar bort alla kontroller vid inaktivitet.
 
 ---
 
@@ -47,13 +46,15 @@ Körs direkt i valfri webbläsare utan externa beroenden:
 open web/index.html
 ```
 
-### Funktioner i webbpanelen:
-* **Platser i Sverige:** Stockholm, Göteborg, Malmö, Kiruna.
-* **Färgteman:** *Nordic Slate*, *E-Ink Minimal*, *70s Arcade*, *Vintage Amber*.
-* **Hastighetslägen:**
-  * 🔴 **1x Dygnsrytm:** 1 studs per 24 timmar (~1 ruta erövras per dygn).
-  * 🍃 **E-Ink Zen:** Lugn meditativ studs var 10:e sekund.
-  * ⚡️ **E-Ink Max:** ~3 fps för test och demonstration.
+### Funktioner:
+* **Helskärm & Kiosk-läge:** Tryck `F`, klicka `⛶` eller dubbelklicka på tavlan för att fylla skärmen kant-till-kant. Kontroller tonar bort automatiskt efter 3.5 sekunder.
+* **Platser i Sverige:** Stockholm, Göteborg, Malmö, Visby, Karlstad, Sundsvall, Umeå, Kiruna eller egen GPS-koordinat.
+* **Färgteman:** *Wabi-Sabi*, *Nordic Slate*, *E-Ink Minimal*, *Falu Rödfärg*, *Aurora*, *Terracotta*, *Vintage Amber*, *70s Arcade*, *Synthwave*.
+* **De 4 Hastighetslägena:**
+  * 🔴 **24h:** True 24h rörelse (1–2 studs per dygn).
+  * 🧘 **Deep-Zen:** ~1 studs var 20–25:e minut.
+  * 🍃 **Zen:** ~1 studs var 10:e sekund.
+  * ⚡️ **Stress:** Snabbdemo för demonstration (~2–3 sekunder).
 
 ---
 
