@@ -126,8 +126,15 @@
 
         .speed-buttons {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 6px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+        }
+
+        .speed-buttons button {
+            padding: 7px 3px;
+            font-size: 0.74rem;
+            text-align: center;
+            white-space: nowrap;
         }
 
         .gear-btn {
@@ -222,9 +229,10 @@
         <div class="control-group">
             <label>Hastighet:</label>
             <div class="speed-buttons">
-                <button id="btnSlow" class="active">🔴 Dygnsrytm (24h)</button>
-                <button id="btnZen">🍃 Zen (10s)</button>
-                <button id="btnEinkFast">⚡️ Snabbdemo</button>
+                <button id="btn24h" class="active" title="True 24h: 1-2 studs per dygn">🔴 24h</button>
+                <button id="btnDeepZen" title="Deep-Zen: 1 studs var ~20-25 min">🧘 Deep-Zen</button>
+                <button id="btnZen" title="Zen: 1 studs var ~10s">🍃 Zen</button>
+                <button id="btnStress" title="Stress: Snabbdemo">⚡️ Stress</button>
             </div>
         </div>
 

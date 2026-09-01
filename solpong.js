@@ -108,6 +108,33 @@ function getTodayDayOfYear() {
     return Math.floor(diff / oneDay);
 }
 
+const SPEED_MODES = {
+    "24h": {
+        name: "24h",
+        label: "🔴 24h",
+        factor: 0.000041, // True 24h: ~1-2 studs per dygn (~12h per korsning av arenan)
+        desc: "True 24h rörelse (1-2 studs per dygn)"
+    },
+    "deep-zen": {
+        name: "deep-zen",
+        label: "🧘 Deep-Zen",
+        factor: 0.001,    // Tidigare 24h: rör sig så långsamt att man knappt ser det om man inte tittar ordentligt (~1 studs var 20-25 min)
+        desc: "Deep-Zen (~1 studs var 20-25 min)"
+    },
+    "zen": {
+        name: "zen",
+        label: "🍃 Zen",
+        factor: 0.08,     // Zen: ~1 studs var 10s
+        desc: "Zen (~1 studs var 10s)"
+    },
+    "stress": {
+        name: "stress",
+        label: "⚡️ Stress",
+        factor: 0.40,     // Snabbdemo
+        desc: "Stress (Snabbdemo)"
+    }
+};
+
 let state = {
     location: "stockholm",
     customLat: 59.3293,
@@ -115,8 +142,8 @@ let state = {
     customName: "Egen plats",
     theme: "paper_charcoal", // Default: Wabi-Sabi (Papper & Kol)
     dayOfYear: getTodayDayOfYear(),
-    speedFactor: 0.001, // Default: 🔴 Dygnsrytm (24h)
-    speedMode: "slow"
+    speedFactor: SPEED_MODES["24h"].factor,
+    speedMode: "24h"
 };
 
 function saveSettings() {
@@ -155,8 +182,14 @@ function loadSettings() {
             state.customName = saved.customName;
             LOCATIONS.custom.name = saved.customName;
         }
-        if (typeof saved.speedFactor === "number") state.speedFactor = saved.speedFactor;
-        if (saved.speedMode) state.speedMode = saved.speedMode;
+        if (saved.speedMode === "slow") saved.speedMode = "deep-zen";
+        if (saved.speedMode === "einkFast") saved.speedMode = "stress";
+        if (saved.speedMode && SPEED_MODES[saved.speedMode]) {
+            state.speedMode = saved.speedMode;
+            state.speedFactor = SPEED_MODES[saved.speedMode].factor;
+        } else if (typeof saved.speedFactor === "number") {
+            state.speedFactor = saved.speedFactor;
+        }
     } catch (e) {
         console.warn("Could not load from localStorage", e);
     }
@@ -292,8 +325,8 @@ function initSimulation() {
 }
 
 // --- Fysik & Blockövertagande vid Kollision ---
-function stepPhysics(ball, speedOverride = null) {
-    const speed = speedOverride !== null ? speedOverride : state.speedFactor;
+function stepPhysics(ball, speedOverride = null, dt = 1.0) {
+    const speed = (speedOverride !== null ? speedOverride : state.speedFactor) * dt;
     ball.x += ball.vx * speed;
     ball.y += ball.vy * speed;
 
@@ -463,21 +496,25 @@ const customCoordsRow = document.getElementById("customCoordsRow");
 const customLatInput = document.getElementById("customLatInput");
 const customLonInput = document.getElementById("customLonInput");
 
-const btnSlow = document.getElementById("btnSlow");
+const btn24h = document.getElementById("btn24h");
+const btnDeepZen = document.getElementById("btnDeepZen");
 const btnZen = document.getElementById("btnZen");
-const btnEinkFast = document.getElementById("btnEinkFast");
+const btnStress = document.getElementById("btnStress");
 
 function updateSpeedUI() {
-    [btnSlow, btnZen, btnEinkFast].forEach(b => b && b.classList.remove("active"));
-    if (state.speedMode === "zen" && btnZen) {
+    [btn24h, btnDeepZen, btnZen, btnStress].forEach(b => b && b.classList.remove("active"));
+    const mode = SPEED_MODES[state.speedMode] ? state.speedMode : "24h";
+    state.speedMode = mode;
+    state.speedFactor = SPEED_MODES[mode].factor;
+
+    if (mode === "deep-zen" && btnDeepZen) {
+        btnDeepZen.classList.add("active");
+    } else if (mode === "zen" && btnZen) {
         btnZen.classList.add("active");
-        state.speedFactor = 0.08;
-    } else if (state.speedMode === "einkFast" && btnEinkFast) {
-        btnEinkFast.classList.add("active");
-        state.speedFactor = 0.40;
-    } else if (btnSlow) {
-        btnSlow.classList.add("active");
-        state.speedFactor = 0.001;
+    } else if (mode === "stress" && btnStress) {
+        btnStress.classList.add("active");
+    } else if (btn24h) {
+        btn24h.classList.add("active");
     }
 }
 
@@ -492,10 +529,19 @@ function updateLocationUI() {
     if (customLonInput) customLonInput.value = state.customLon;
 }
 
-if (btnSlow) {
-    btnSlow.addEventListener("click", () => {
-        state.speedMode = "slow";
-        state.speedFactor = 0.001; // 24h Slow Art (1-2 rutor/dygn)
+if (btn24h) {
+    btn24h.addEventListener("click", () => {
+        state.speedMode = "24h";
+        state.speedFactor = SPEED_MODES["24h"].factor;
+        updateSpeedUI();
+        saveSettings();
+    });
+}
+
+if (btnDeepZen) {
+    btnDeepZen.addEventListener("click", () => {
+        state.speedMode = "deep-zen";
+        state.speedFactor = SPEED_MODES["deep-zen"].factor;
         updateSpeedUI();
         saveSettings();
     });
@@ -504,16 +550,16 @@ if (btnSlow) {
 if (btnZen) {
     btnZen.addEventListener("click", () => {
         state.speedMode = "zen";
-        state.speedFactor = 0.08; // Zen mode (1 studs var ~10s)
+        state.speedFactor = SPEED_MODES["zen"].factor;
         updateSpeedUI();
         saveSettings();
     });
 }
 
-if (btnEinkFast) {
-    btnEinkFast.addEventListener("click", () => {
-        state.speedMode = "einkFast";
-        state.speedFactor = 0.40; // Max E-Ink Partial Refresh (~3 fps)
+if (btnStress) {
+    btnStress.addEventListener("click", () => {
+        state.speedMode = "stress";
+        state.speedFactor = SPEED_MODES["stress"].factor;
         updateSpeedUI();
         saveSettings();
     });
@@ -603,10 +649,16 @@ if (toggleSettingsBtn && devControls) {
     });
 }
 
-// Huvudloop
-function loop() {
-    stepPhysics(darkBall);
-    stepPhysics(lightBall);
+let lastLoopTime = performance.now();
+
+// Huvudloop med delta-time (normaliserad mot 60 FPS för jämn rörelse oavsett skärmens Hz)
+function loop(now = performance.now()) {
+    const elapsed = now - lastLoopTime;
+    const dt = Math.min(2.0, elapsed / (1000 / 60));
+    lastLoopTime = now;
+
+    stepPhysics(darkBall, null, dt);
+    stepPhysics(lightBall, null, dt);
     render();
     requestAnimationFrame(loop);
 }
