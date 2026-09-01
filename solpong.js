@@ -216,7 +216,11 @@ let darkBall = {
     vy: 0.6,
     radius: 9,
     enemyTile: 1,
-    flipTo: 0
+    flipTo: 0,
+    stuckCount: 0,
+    lastBounceX: 0,
+    lastBounceY: 0,
+    unflippedHits: 0
 };
 
 let lightBall = {
@@ -226,7 +230,11 @@ let lightBall = {
     vy: -0.6,
     radius: 9,
     enemyTile: 0,
-    flipTo: 1
+    flipTo: 1,
+    stuckCount: 0,
+    lastBounceX: 0,
+    lastBounceY: 0,
+    unflippedHits: 0
 };
 
 function updateDimensions() {
@@ -354,6 +362,10 @@ function initSimulation() {
     const mag1 = Math.hypot(4.5, 3.2);
     darkBall.vx = 4.5 / mag1;
     darkBall.vy = 3.2 / mag1;
+    darkBall.stuckCount = 0;
+    darkBall.lastBounceX = darkBall.x;
+    darkBall.lastBounceY = darkBall.y;
+    darkBall.unflippedHits = 0;
 
     const nightW = (gridCols - dayCols) * tileWidth;
     lightBall.x = Math.min(arenaWidth - 25, (dayCols * tileWidth) + (nightW / 2));
@@ -361,6 +373,10 @@ function initSimulation() {
     const mag2 = Math.hypot(-4.5, -3.2);
     lightBall.vx = -4.5 / mag2;
     lightBall.vy = -3.2 / mag2;
+    lightBall.stuckCount = 0;
+    lightBall.lastBounceX = lightBall.x;
+    lightBall.lastBounceY = lightBall.y;
+    lightBall.unflippedHits = 0;
 
     const preRollSpeed = Math.min(tileWidth, tileHeight) * 0.35;
     for (let i = 0; i < 280; i++) {
@@ -369,25 +385,79 @@ function initSimulation() {
     }
 }
 
+// -------------------------------------------------------------
+// ANTI-STUCK & VINKELSPÄRR
+// Förhindrar att en boll fastnar i en 1-rutes-korridor eller oscillerar
+// -------------------------------------------------------------
+function enforceMinAngle(ball) {
+    // Minsta tillåtna hastighetskomponent (~18 grader från axlarna)
+    // Detta förhindrar rent lodräta eller vågräta "ping-pong-låsningar"
+    const minComponent = 0.30;
+    if (Math.abs(ball.vx) < minComponent) {
+        ball.vx = (ball.vx >= 0 ? 1 : -1) * minComponent;
+    }
+    if (Math.abs(ball.vy) < minComponent) {
+        ball.vy = (ball.vy >= 0 ? 1 : -1) * minComponent;
+    }
+    const mag = Math.hypot(ball.vx, ball.vy) || 1.0;
+    ball.vx /= mag;
+    ball.vy /= mag;
+}
+
+function registerBounce(ball) {
+    const threshold = Math.max(tileWidth, tileHeight) * 2.2;
+    const dist = Math.hypot(ball.x - ball.lastBounceX, ball.y - ball.lastBounceY);
+    if (dist < threshold) {
+        ball.stuckCount++;
+    } else {
+        ball.stuckCount = 0;
+    }
+    ball.lastBounceX = ball.x;
+    ball.lastBounceY = ball.y;
+
+    // Om bollen studsat 4 gånger inom samma lilla ficka: ge en kraftig diagonal brytningsvinkel!
+    if (ball.stuckCount >= 4) {
+        const diagAngles = [Math.PI / 4, 3 * Math.PI / 4, 5 * Math.PI / 4, 7 * Math.PI / 4];
+        const chosen = diagAngles[Math.floor(Math.random() * diagAngles.length)];
+        ball.vx = Math.cos(chosen) + (Math.random() - 0.5) * 0.2;
+        ball.vy = Math.sin(chosen) + (Math.random() - 0.5) * 0.2;
+        const mag = Math.hypot(ball.vx, ball.vy) || 1.0;
+        ball.vx /= mag;
+        ball.vy /= mag;
+        ball.stuckCount = 0;
+        ball.unflippedHits = 3; // Garanterar 100% vändning vid nästa träff så den bryter sig fri
+    }
+}
+
 function stepPhysics(ball, speedOverride = null, dt = 1.0) {
     const speed = (speedOverride !== null ? speedOverride : getFrameSpeed()) * dt;
     ball.x += ball.vx * speed;
     ball.y += ball.vy * speed;
 
+    let bouncedWall = false;
     if (ball.x - ball.radius < 0) {
         ball.x = ball.radius;
         ball.vx = Math.abs(ball.vx);
+        bouncedWall = true;
     } else if (ball.x + ball.radius > arenaWidth) {
         ball.x = arenaWidth - ball.radius;
         ball.vx = -Math.abs(ball.vx);
+        bouncedWall = true;
     }
 
     if (ball.y - ball.radius < 0) {
         ball.y = ball.radius;
         ball.vy = Math.abs(ball.vy);
+        bouncedWall = true;
     } else if (ball.y + ball.radius > arenaHeight) {
         ball.y = arenaHeight - ball.radius;
         ball.vy = -Math.abs(ball.vy);
+        bouncedWall = true;
+    }
+
+    if (bouncedWall) {
+        enforceMinAngle(ball);
+        registerBounce(ball);
     }
 
     const angles = [0, Math.PI / 4, Math.PI / 2, (3 * Math.PI) / 4, Math.PI, (5 * Math.PI) / 4, (3 * Math.PI) / 2, (7 * Math.PI) / 4];
@@ -425,8 +495,13 @@ function stepPhysics(ball, speedOverride = null, dt = 1.0) {
 
         if (gx >= 0 && gx < gridCols && gy >= 0 && gy < gridRows) {
             if (grid[gy][gx] === ball.enemyTile) {
-                if (Math.random() <= flipChance) {
+                // Om bollen fastnat i en ficka eller misslyckats vända 3 ggr i rad: 100% vändning
+                const mustFlip = ball.unflippedHits >= 3 || ball.stuckCount >= 3;
+                if (mustFlip || Math.random() <= flipChance) {
                     grid[gy][gx] = ball.flipTo;
+                    ball.unflippedHits = 0;
+                } else {
+                    ball.unflippedHits++;
                 }
 
                 if (Math.abs(Math.cos(angle)) > Math.abs(Math.sin(angle))) {
@@ -439,9 +514,8 @@ function stepPhysics(ball, speedOverride = null, dt = 1.0) {
                 ball.vx += jitter;
                 ball.vy -= jitter;
 
-                const mag = Math.hypot(ball.vx, ball.vy) || 1.0;
-                ball.vx /= mag;
-                ball.vy /= mag;
+                enforceMinAngle(ball);
+                registerBounce(ball);
 
                 break;
             }
