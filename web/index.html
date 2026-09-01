@@ -42,106 +42,206 @@
             image-rendering: pixelated;
         }
 
-        /* Test- och inställningspanel för datorn (visas ej på tavlan) */
+        /* Subtil, avskalad inställningspanel (Wabi-Sabi / Nordic Slate minimalism) */
         .dev-controls {
-            margin-top: 24px;
-            background: rgba(17, 26, 29, 0.85);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
-            padding: 16px 20px;
+            margin-top: 20px;
+            background: rgba(14, 21, 24, 0.88);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 14px;
+            padding: 18px 22px;
             width: 100%;
             max-width: 492px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 16px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03);
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+
+        .dev-controls.hidden {
+            display: none;
         }
 
         .dev-header {
-            font-size: 0.75rem;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: #7b9299;
-            font-weight: 600;
+            letter-spacing: 2px;
+            color: #6c8289;
+            font-weight: 500;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .btn-text {
+            background: none;
+            border: none;
+            color: #7d949b;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            padding: 0;
+            transition: color 0.15s ease;
+        }
+
+        .btn-text:hover {
+            color: #e5ece9;
+            background: none;
+            border: none;
         }
 
         .control-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 10px;
+            gap: 12px;
         }
 
         .control-group {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 6px;
             flex: 1;
         }
 
         label {
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: #8b9ea3;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 10px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #6c8289;
             display: flex;
             justify-content: space-between;
+            align-items: center;
         }
 
         label span {
-            color: #e5ece9;
-            font-family: monospace;
+            color: #d6e0dd;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-weight: 400;
+            text-transform: none;
+            letter-spacing: 0;
         }
 
-        input[type="range"] {
-            width: 100%;
-            accent-color: #e5ece9;
+        .micro-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #8da2a8;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 9px;
+            letter-spacing: 0.5px;
+            padding: 2px 7px;
+            border-radius: 12px;
             cursor: pointer;
+            transition: all 0.2s ease;
         }
 
-        select, button {
-            background: #1c272b;
-            color: #c9d1d9;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 7px 12px;
-            border-radius: 6px;
-            font-size: 0.82rem;
+        .micro-btn:hover {
+            background: rgba(255, 255, 255, 0.09);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        /* Minimalistiska Dropdowns */
+        select {
+            background: rgba(255, 255, 255, 0.035);
+            color: #dbe3e0;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
             cursor: pointer;
             outline: none;
-            transition: 0.2s;
+            transition: all 0.2s ease;
+            width: 100%;
         }
 
-        select:hover, button:hover {
-            background: #28373d;
-            border-color: #a0b2b8;
+        select:hover, select:focus {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
         }
 
-        button.active {
-            background: #238636;
-            border-color: #2ea043;
-            color: #fff;
+        /* Sober Segmented Control för Hastighet */
+        .segmented-control {
+            display: flex;
+            background: rgba(0, 0, 0, 0.28);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 3px;
+            gap: 2px;
         }
 
-        .speed-buttons {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 5px;
-        }
-
-        .speed-buttons button {
-            padding: 7px 3px;
-            font-size: 0.74rem;
+        .segmented-control button {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #7b9096;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 7px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
             text-align: center;
-            white-space: nowrap;
+            outline: none;
+        }
+
+        .segmented-control button:hover {
+            color: #c9d6d3;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .segmented-control button.active {
+            background: rgba(255, 255, 255, 0.11);
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+        }
+
+        /* Minimalistisk slider */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 2px;
+            outline: none;
+            margin: 8px 0;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            background: #dce6e2;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+            transition: transform 0.15s ease, background 0.15s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            background: #ffffff;
         }
 
         .gear-btn {
             background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            color: #8b9ea3;
-            font-size: 13px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: #6a7f85;
+            font-size: 12px;
             width: 28px;
             height: 28px;
             border-radius: 50%;
@@ -149,21 +249,18 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            opacity: 0.25;
+            opacity: 0.35;
             transition: all 0.2s ease;
-            margin-top: 14px;
+            margin-top: 16px;
             padding: 0;
         }
 
         .gear-btn:hover {
             opacity: 0.9;
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.18);
+            color: #d6e0dd;
             transform: rotate(45deg);
-        }
-
-        .dev-controls.hidden {
-            display: none;
         }
     </style>
 </head>
@@ -177,16 +274,16 @@
     <!-- ⚙️ SUBTIL MINIMALISTISK KNAPP FÖR ATT FÄLLA UT INSTÄLLNINGAR -->
     <button id="toggleSettingsBtn" class="gear-btn" title="Inställningar" aria-label="Inställningar">⚙️</button>
 
-    <!-- 🛠️ INSTÄLLNINGSPANEL (Dold som standard) -->
+    <!-- 🛠️ INSTÄLLNINGSPANEL (Sober & Avskalad) -->
     <div id="devControls" class="dev-controls hidden">
         <div class="dev-header">
-            <span>⚙️ Inställningar</span>
-            <button id="resetBtn" style="padding: 3px 8px; font-size: 0.72rem;">🔄 Nollställ</button>
+            <span>Inställningar</span>
+            <button id="resetBtn" class="btn-text">Återställ</button>
         </div>
 
         <div class="control-row">
             <div class="control-group">
-                <label>Plats: <button id="geoBtn" style="padding: 2px 6px; font-size: 0.68rem; margin-left: 8px;">📍 Hämta min plats</button></label>
+                <label>Plats <button id="geoBtn" class="micro-btn">📍 GPS</button></label>
                 <select id="locationSelect">
                     <option value="stockholm">Stockholm (59.33° N)</option>
                     <option value="goteborg">Göteborg (57.70° N)</option>
@@ -196,11 +293,11 @@
                     <option value="sundsvall">Sundsvall (62.39° N)</option>
                     <option value="umea">Umeå (63.83° N)</option>
                     <option value="kiruna">Kiruna (67.86° N)</option>
-                    <option value="custom">🎯 Egen koordinat...</option>
+                    <option value="custom">Egen koordinat...</option>
                 </select>
             </div>
             <div class="control-group">
-                <label>Färgtema:</label>
+                <label>Färgtema</label>
                 <select id="themeSelect">
                     <option value="paper_charcoal" selected>Wabi-Sabi (Papper & Kol)</option>
                     <option value="nordic">Nordic Slate (Skiffer & Is)</option>
@@ -217,27 +314,27 @@
 
         <div id="customCoordsRow" class="control-row" style="display: none;">
             <div class="control-group">
-                <label>Latitud (°N):</label>
-                <input type="number" id="customLatInput" step="0.01" value="59.33" style="background: #1c272b; color: #c9d1d9; border: 1px solid rgba(255,255,255,0.1); padding: 5px 8px; border-radius: 6px; font-size: 0.8rem;">
+                <label>Latitud (°N)</label>
+                <input type="number" id="customLatInput" step="0.01" value="59.33" style="background: rgba(255,255,255,0.035); color: #dbe3e0; border: 1px solid rgba(255,255,255,0.07); padding: 7px 10px; border-radius: 8px; font-size: 0.8rem; font-family: 'SF Mono', monospace;">
             </div>
             <div class="control-group">
-                <label>Longitud (°E):</label>
-                <input type="number" id="customLonInput" step="0.01" value="18.07" style="background: #1c272b; color: #c9d1d9; border: 1px solid rgba(255,255,255,0.1); padding: 5px 8px; border-radius: 6px; font-size: 0.8rem;">
+                <label>Longitud (°E)</label>
+                <input type="number" id="customLonInput" step="0.01" value="18.07" style="background: rgba(255,255,255,0.035); color: #dbe3e0; border: 1px solid rgba(255,255,255,0.07); padding: 7px 10px; border-radius: 8px; font-size: 0.8rem; font-family: 'SF Mono', monospace;">
             </div>
         </div>
 
         <div class="control-group">
-            <label>Hastighet:</label>
-            <div class="speed-buttons">
-                <button id="btn24h" class="active" title="True 24h: 1-2 studs per dygn">🔴 24h</button>
-                <button id="btnDeepZen" title="Deep-Zen: 1 studs var ~20-25 min">🧘 Deep-Zen</button>
-                <button id="btnZen" title="Zen: 1 studs var ~10s">🍃 Zen</button>
-                <button id="btnStress" title="Stress: Snabbdemo">⚡️ Stress</button>
+            <label>Hastighet</label>
+            <div class="segmented-control">
+                <button id="btn24h" class="active" title="True 24h: 1-2 studs per dygn">24h</button>
+                <button id="btnDeepZen" title="Deep-Zen: 1 studs var ~20-25 min">Deep-Zen</button>
+                <button id="btnZen" title="Zen: 1 studs var ~10s">Zen</button>
+                <button id="btnStress" title="Stress: Snabbdemo">Stress</button>
             </div>
         </div>
 
         <div class="control-group">
-            <label>Årstid / Dag på året: <span id="dateDisplay">31 Augusti</span></label>
+            <label>Årstid <span id="dateDisplay">31 Augusti</span></label>
             <input type="range" id="dayOfYearSlider" min="1" max="365" value="243">
         </div>
     </div>
