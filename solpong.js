@@ -429,6 +429,39 @@ function registerBounce(ball) {
     }
 }
 
+// -------------------------------------------------------------
+// SPATIAL ORIENTATION BIAS (ÖST-VÄST / SOLUPPGÅNG-SOLNEDGÅNG)
+// Förhindrar att gränsen låser sig horisontellt ("himmel & jord").
+// Rutor på vänster sida dras mot Dag (öst/soluppgång), och
+// rutor på höger sida dras mot Natt (väst/solnedgång).
+// -------------------------------------------------------------
+function getSpatialFlipChance(ball, gx, gy, baseFlipChance, targetRatio) {
+    const xNorm = (gx + 0.5) / gridCols;
+    const xDist = xNorm - targetRatio; // < 0 = vänster (dag-sidan), > 0 = höger (natt-sidan)
+
+    if (ball.flipTo === 0) {
+        // darkBall återerövrar till DAG
+        if (xDist < -0.06) {
+            const bonus = Math.abs(xDist) * 2.5;
+            return Math.min(1.0, baseFlipChance + bonus);
+        } else if (xDist > 0.06) {
+            const penalty = xDist * 1.6;
+            return Math.max(0.08, baseFlipChance - penalty);
+        }
+    } else {
+        // lightBall återerövrar till NATT
+        if (xDist > 0.06) {
+            const bonus = xDist * 2.5;
+            return Math.min(1.0, baseFlipChance + bonus);
+        } else if (xDist < -0.06) {
+            const penalty = Math.abs(xDist) * 1.6;
+            return Math.max(0.08, baseFlipChance - penalty);
+        }
+    }
+
+    return baseFlipChance;
+}
+
 function stepPhysics(ball, speedOverride = null, dt = 1.0) {
     const speed = (speedOverride !== null ? speedOverride : getFrameSpeed()) * dt;
     ball.x += ball.vx * speed;
@@ -495,9 +528,15 @@ function stepPhysics(ball, speedOverride = null, dt = 1.0) {
 
         if (gx >= 0 && gx < gridCols && gy >= 0 && gy < gridRows) {
             if (grid[gy][gx] === ball.enemyTile) {
+                // Beräkna spatial chans som bibehåller vertikal öst-väst-orientering
+                let effectiveFlipChance = getSpatialFlipChance(ball, gx, gy, flipChance, solar.daylightRatio);
+
                 // Om bollen fastnat i en ficka eller misslyckats vända 3 ggr i rad: 100% vändning
-                const mustFlip = ball.unflippedHits >= 3 || ball.stuckCount >= 3;
-                if (mustFlip || Math.random() <= flipChance) {
+                if (ball.unflippedHits >= 3 || ball.stuckCount >= 3) {
+                    effectiveFlipChance = 1.0;
+                }
+
+                if (Math.random() <= effectiveFlipChance) {
                     grid[gy][gx] = ball.flipTo;
                     ball.unflippedHits = 0;
                 } else {
