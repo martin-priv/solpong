@@ -623,8 +623,8 @@ function updateLocationUI() {
     if (customCoordsRow) {
         customCoordsRow.style.display = state.location === "custom" ? "flex" : "none";
     }
-    if (customLatInput) customLatInput.value = state.customLat;
-    if (customLonInput) customLonInput.value = state.customLon;
+    if (customLatInput) customLatInput.value = state.customLat !== undefined ? Number(state.customLat).toFixed(4) : "59.3300";
+    if (customLonInput) customLonInput.value = state.customLon !== undefined ? Number(state.customLon).toFixed(4) : "18.0700";
 }
 
 if (btn24h) {
