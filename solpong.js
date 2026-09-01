@@ -219,8 +219,7 @@ let darkBall = {
     flipTo: 0,
     stuckCount: 0,
     lastBounceX: 0,
-    lastBounceY: 0,
-    unflippedHits: 0
+    lastBounceY: 0
 };
 
 let lightBall = {
@@ -233,8 +232,7 @@ let lightBall = {
     flipTo: 1,
     stuckCount: 0,
     lastBounceX: 0,
-    lastBounceY: 0,
-    unflippedHits: 0
+    lastBounceY: 0
 };
 
 function updateDimensions() {
@@ -365,7 +363,6 @@ function initSimulation() {
     darkBall.stuckCount = 0;
     darkBall.lastBounceX = darkBall.x;
     darkBall.lastBounceY = darkBall.y;
-    darkBall.unflippedHits = 0;
 
     const nightW = (gridCols - dayCols) * tileWidth;
     lightBall.x = Math.min(arenaWidth - 25, (dayCols * tileWidth) + (nightW / 2));
@@ -376,7 +373,6 @@ function initSimulation() {
     lightBall.stuckCount = 0;
     lightBall.lastBounceX = lightBall.x;
     lightBall.lastBounceY = lightBall.y;
-    lightBall.unflippedHits = 0;
 
     const preRollSpeed = Math.min(tileWidth, tileHeight) * 0.35;
     for (let i = 0; i < 280; i++) {
@@ -425,47 +421,61 @@ function registerBounce(ball) {
         ball.vx /= mag;
         ball.vy /= mag;
         ball.stuckCount = 0;
-        ball.unflippedHits = 3; // Garanterar 100% vändning vid nästa träff så den bryter sig fri
     }
 }
 
 // -------------------------------------------------------------
-// SPATIAL ORIENTATION BIAS (ÖST-VÄST / SOLUPPGÅNG-SOLNEDGÅNG)
-// Förhindrar att gränsen låser sig horisontellt ("himmel & jord").
-// Rutor på vänster sida dras mot Dag (öst/soluppgång), och
-// rutor på höger sida dras mot Natt (väst/solnedgång).
+// VINKELSTYRD SOLJÄMVIKT (ASTRONOMICAL ANGLE BIAS)
+// I stället för att bollen studsar "tomt" utan att ta en ruta,
+// tar varje träff ALLTID 100% av rutan den nuddar!
+// Solbalansen regleras genom att justera studsvinkeln:
+// - Bråttom (underläge): Flackare vinkel rakt mot frontlinjen (kort väg fram)
+// - Gott om tid (överläge): Brantare vinkel mot tak och golv (lång väg fram)
+// Båda bollarna behåller exakt samma konstanta hastighet och spikraka linjer.
 // -------------------------------------------------------------
-function getSpatialFlipChance(ball, gx, gy, baseFlipChance, targetRatio) {
-    const xNorm = (gx + 0.5) / gridCols;
-    const xDist = xNorm - targetRatio; // < 0 = vänster (dag-sidan), > 0 = höger (natt-sidan)
+function applyAngleBias(ball, normalizedDiff) {
+    // urgency > 0 = bollen är i underläge och har "bråttom"
+    // urgency < 0 = bollen är i överläge och har "gott om tid"
+    const urgency = (ball.flipTo === 0) ? -normalizedDiff : normalizedDiff;
 
-    if (ball.flipTo === 0) {
-        // darkBall återerövrar till DAG
-        if (xDist < -0.06) {
-            const bonus = Math.abs(xDist) * 2.5;
-            return Math.min(1.0, baseFlipChance + bonus);
-        } else if (xDist > 0.06) {
-            const penalty = xDist * 1.6;
-            return Math.max(0.08, baseFlipChance - penalty);
-        }
-    } else {
-        // lightBall återerövrar till NATT
-        if (xDist > 0.06) {
-            const bonus = xDist * 2.5;
-            return Math.min(1.0, baseFlipChance + bonus);
-        } else if (xDist < -0.06) {
-            const penalty = Math.abs(xDist) * 1.6;
-            return Math.max(0.08, baseFlipChance - penalty);
-        }
+    const signX = Math.sign(ball.vx) || 1;
+    const signY = Math.sign(ball.vy) || 1;
+    let absX = Math.abs(ball.vx);
+    let absY = Math.abs(ball.vy);
+
+    if (urgency > 0.005) {
+        // Bråttom: gör vinkeln flackare mot frontlinjen (öka x-hastighet, minska y)
+        const shift = Math.min(0.35, urgency * 2.5);
+        absX += shift;
+        absY = Math.max(0.28, absY - shift);
+    } else if (urgency < -0.005) {
+        // Gott om tid: gör vinkeln brantare mot tak/golv (minska x-hastighet, öka y)
+        const shift = Math.min(0.35, -urgency * 2.5);
+        absY += shift;
+        absX = Math.max(0.28, absX - shift);
     }
 
-    return baseFlipChance;
+    ball.vx = signX * absX;
+    ball.vy = signY * absY;
 }
 
 function stepPhysics(ball, speedOverride = null, dt = 1.0) {
     const speed = (speedOverride !== null ? speedOverride : getFrameSpeed()) * dt;
     ball.x += ball.vx * speed;
     ball.y += ball.vy * speed;
+
+    let currentDayCount = 0;
+    for (let y = 0; y < gridRows; y++) {
+        for (let x = 0; x < gridCols; x++) {
+            if (grid[y][x] === 0) currentDayCount++;
+        }
+    }
+    const totalTiles = gridCols * gridRows;
+    const loc = LOCATIONS[state.location] || LOCATIONS.stockholm;
+    const solar = calculateSolarTimes(loc.lat, loc.lon, state.dayOfYear);
+    const targetDayCount = Math.round(totalTiles * solar.daylightRatio);
+    const diff = currentDayCount - targetDayCount;
+    const normalizedDiff = diff / totalTiles;
 
     let bouncedWall = false;
     if (ball.x - ball.radius < 0) {
@@ -489,35 +499,12 @@ function stepPhysics(ball, speedOverride = null, dt = 1.0) {
     }
 
     if (bouncedWall) {
+        applyAngleBias(ball, normalizedDiff);
         enforceMinAngle(ball);
         registerBounce(ball);
     }
 
     const angles = [0, Math.PI / 4, Math.PI / 2, (3 * Math.PI) / 4, Math.PI, (5 * Math.PI) / 4, (3 * Math.PI) / 2, (7 * Math.PI) / 4];
-    
-    let currentDayCount = 0;
-    for (let y = 0; y < gridRows; y++) {
-        for (let x = 0; x < gridCols; x++) {
-            if (grid[y][x] === 0) currentDayCount++;
-        }
-    }
-    const totalTiles = gridCols * gridRows;
-    const loc = LOCATIONS[state.location] || LOCATIONS.stockholm;
-    const solar = calculateSolarTimes(loc.lat, loc.lon, state.dayOfYear);
-    const targetDayCount = Math.round(totalTiles * solar.daylightRatio);
-    const diff = currentDayCount - targetDayCount;
-    const normalizedDiff = diff / totalTiles;
-
-    let flipChance = 1.0;
-    if (ball.flipTo === 0) {
-        if (normalizedDiff > 0.01) {
-            flipChance = Math.max(0.20, 1.0 - (normalizedDiff * 15));
-        }
-    } else {
-        if (normalizedDiff < -0.01) {
-            flipChance = Math.max(0.20, 1.0 - (-normalizedDiff * 15));
-        }
-    }
 
     for (let angle of angles) {
         const checkX = ball.x + Math.cos(angle) * ball.radius;
@@ -528,20 +515,8 @@ function stepPhysics(ball, speedOverride = null, dt = 1.0) {
 
         if (gx >= 0 && gx < gridCols && gy >= 0 && gy < gridRows) {
             if (grid[gy][gx] === ball.enemyTile) {
-                // Beräkna spatial chans som bibehåller vertikal öst-väst-orientering
-                let effectiveFlipChance = getSpatialFlipChance(ball, gx, gy, flipChance, solar.daylightRatio);
-
-                // Om bollen fastnat i en ficka eller misslyckats vända 3 ggr i rad: 100% vändning
-                if (ball.unflippedHits >= 3 || ball.stuckCount >= 3) {
-                    effectiveFlipChance = 1.0;
-                }
-
-                if (Math.random() <= effectiveFlipChance) {
-                    grid[gy][gx] = ball.flipTo;
-                    ball.unflippedHits = 0;
-                } else {
-                    ball.unflippedHits++;
-                }
+                // Erövra rutan med 100% garanti! Aldrig någon tom studs.
+                grid[gy][gx] = ball.flipTo;
 
                 if (Math.abs(Math.cos(angle)) > Math.abs(Math.sin(angle))) {
                     ball.vx = -ball.vx;
@@ -553,6 +528,7 @@ function stepPhysics(ball, speedOverride = null, dt = 1.0) {
                 ball.vx += jitter;
                 ball.vy -= jitter;
 
+                applyAngleBias(ball, normalizedDiff);
                 enforceMinAngle(ball);
                 registerBounce(ball);
 
